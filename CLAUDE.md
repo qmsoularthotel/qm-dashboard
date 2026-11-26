@@ -160,8 +160,8 @@ Ognuna è nata da un incidente vero; il racconto completo è nel file indicato.
   Consumo Biancheria va riportata nella copia della Galleria. La distinta dello sporco si
   stampa solo se tutto è in regola (`_biaDistBlocchi`); nella Galleria i dati mancanti vecchi
   sono solo avviso (`GB_DIST_SOLO_AVVISO`, 22/11/2026). → `docs/biancheria.md`
-- Recensioni: punteggio Booking a **fasce annuali** (media di ogni anno, pesi 90/6/4 uguali per
-  tutte le strutture, finestra 36 mesi); le letture registrate lo **verificano**, non lo tarano
+- Recensioni: punteggio Booking a **fasce annuali** (media di ogni anno, pesi uguali per tutte
+  le strutture: **70/30/0 dal 06/10/2026**, prima 90/6/4 — `revPesiAl` per il passato; si conta 24 mesi); le letture registrate lo **verificano**, non lo tarano
   (l'emivita per struttura è stata tolta il 04/10/2026). Le risposte Expedia non usano il nome
   dell'ospite di proposito. → `docs/recensioni.md`
 - Colazione (app Breakfast e Overview): il `tipo` arrivo/fermata/partenza dello snapshot vale
@@ -195,55 +195,55 @@ quelle già provate e scartate.
 ## §§ Section Map (app.js)
 
 Si rigenera con `grep -n "// §§" app.js | sed 's|// §§||'`. Un controllo in `test/esegui.sh`
-verifica che ogni sezione compaia qui. Rigenerata il 23/11/2026 — 19337 righe.
+verifica che ogni sezione compaia qui. Rigenerata il 26/11/2026 — 19805 righe.
 
 | Riga | Sezione |
 |------|---------|
 | 26 | DARK MODE |
 | 34 | COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST) |
 | 59 | TURNO — ACCORDIONI UC & UPLOAD BOX |
-| 175 | TURNO — PARSER TSV/PDF (parseTurniTSV, handleTurniFile) |
-| 351 | TURNO — RENDER & NAVIGAZIONE (loadWeekData, renderDay, buildWeekNav) |
-| 1170 | NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup) |
-| 1173 | HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore) |
-| 1189 | HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi) |
-| 2392 | DVR — SCADENZE SICUREZZA & COMPLIANCE |
-| 2449 | MOBILE SIDEBAR |
-| 2792 | MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico) |
-| 4824 | ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e |
-| 5131 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs) |
-| 5171 | BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud |
-| 5526 | STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud) |
-| 6121 | OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview) |
-| 6152 | OVERVIEW — GRAFICI & METEO (fetchMeteo, toggleWeatherForecast) |
-| 6225 | SIDEBAR — OROLOGIO & DATA (toggleDatePopup, saveDate, updateDateDisplay) |
-| 6262 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud) |
-| 6621 | RECENSIONI — SCORE TREND MODAL (openScoreTrend) |
-| 6702 | OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply) |
-| 6820 | BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*) |
-| 7042 | REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie) |
-| 7220 | RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel) |
-| 7287 | RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply) |
-| 7708 | RECENSIONI BOOKING — PUNTEGGIO A FASCE ANNUALI + VERIFICA SUL PUNTEGGIO REALE |
-| 8622 | REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart) |
-| 8863 | HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData) |
-| 8942 | PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, pianoSetLoaded) |
-| 9159 | BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf) |
-| 9520 | REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards) |
-| 9739 | MODAL — CATEGORIE TREND (openCatModal, closeCatModal) |
-| 9838 | ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal) |
-| 9840 | COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout) |
-| 10493 | INVENTARIO DETERSIVI |
-| 11119 | INVENTARIO — ORDINI |
-| 11627 | PREFERENZE TURNI |
-| 12069 | CONTROLLO MATTINO (cmLoad, cmRender) |
-| 12404 | RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply) |
-| 12719 | DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico |
-| 14148 | RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo) |
-| 14660 | BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo) |
-| 17112 | GIACENZA BIANCHERIA — magazzino e pezzi in mano alle cameriere |
-| 17789 | PRENOTAZIONI — file unico dal PMS (arrivi + colazioni) |
-| 18238 | CONFERME — finestra Compass al posto di confirm()/alert() del browser |
-| 18293 | SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola |
-| 18779 | ACCESSO — ABILITAZIONE DEI DISPOSITIVI |
-| 18968 | AGENDA — to-do personale della settimana (aggiungi, spunta, sposta, elimina) |
+| 176 | TURNO — PARSER TSV/PDF (parseTurniTSV, handleTurniFile) |
+| 352 | TURNO — RENDER & NAVIGAZIONE (loadWeekData, renderDay, buildWeekNav) |
+| 1181 | NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup) |
+| 1184 | HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore) |
+| 1200 | HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi) |
+| 2373 | DVR — SCADENZE SICUREZZA & COMPLIANCE |
+| 2430 | MOBILE SIDEBAR |
+| 2773 | MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico) |
+| 4905 | ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e |
+| 5212 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs) |
+| 5252 | BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud |
+| 5767 | STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud) |
+| 6363 | OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview) |
+| 6394 | OVERVIEW — GRAFICI & METEO (fetchMeteo, toggleWeatherForecast) |
+| 6467 | SIDEBAR — OROLOGIO & DATA (toggleDatePopup, saveDate, updateDateDisplay) |
+| 6504 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud) |
+| 6863 | RECENSIONI — SCORE TREND MODAL (openScoreTrend) |
+| 6946 | OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply) |
+| 7064 | BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*) |
+| 7386 | REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie) |
+| 7564 | RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel) |
+| 7631 | RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply) |
+| 8053 | RECENSIONI BOOKING — PUNTEGGIO A FASCE ANNUALI + VERIFICA SUL PUNTEGGIO REALE |
+| 8995 | REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart) |
+| 9236 | HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData) |
+| 9315 | PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, pianoSetLoaded) |
+| 9532 | BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf) |
+| 9893 | REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards) |
+| 10112 | MODAL — CATEGORIE TREND (openCatModal, closeCatModal) |
+| 10211 | ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal) |
+| 10213 | COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout) |
+| 10866 | INVENTARIO DETERSIVI |
+| 11483 | INVENTARIO — ORDINI |
+| 11990 | PREFERENZE TURNI |
+| 12459 | CONTROLLO MATTINO (cmLoad, cmRender) |
+| 12794 | RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply) |
+| 13109 | DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico |
+| 14538 | RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo) |
+| 15056 | BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo) |
+| 17524 | GIACENZA BIANCHERIA — magazzino e pezzi in mano alle cameriere |
+| 18205 | PRENOTAZIONI — file unico dal PMS (arrivi + colazioni) |
+| 18656 | CONFERME — finestra Compass al posto di confirm()/alert() del browser |
+| 18753 | SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola |
+| 19243 | ACCESSO — ABILITAZIONE DEI DISPOSITIVI |
+| 19436 | AGENDA — to-do personale della settimana (aggiungi, spunta, sposta, elimina) |

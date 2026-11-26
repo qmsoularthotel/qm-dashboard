@@ -1296,17 +1296,19 @@ function _r(giorniFa, voto) { return { _dateTs: OGGI - giorniFa * GG, _score: vo
 var A = [_r(10, 10), _r(100, 10), _r(200, 10)];                 // ultimo anno: tutti 10
 var B = []; for (var i = 0; i < 50; i++) B.push(_r(400 + i, 6)); // secondo anno: 50 da 6
 var C3 = [_r(800, 2)];                                           // terzo anno: un 2
-var PB = punteggioBooking(A.concat(B, C3), REV_PESI_ANNI, OGGI);
-ok('pesi in uso 90/6/4', REV_PESI_ANNI.join('/'), '0.9/0.06/0.04');
+// La meccanica si prova coi pesi di prima del cambio di ottobre 2026 (numeri tondi).
+var PV = [0.9, 0.06, 0.04];
+var PB = punteggioBooking(A.concat(B, C3), PV, OGGI);
+ok('pesi fino a ottobre 2026: 90/6/4', revPesiAl(new Date('2026-09-15T12:00:00')).join('/'), '0.9/0.06/0.04');
 ok('media per anno pesata: 0.9*10 + 0.06*6 + 0.04*2', Math.round(PB.score * 1000) / 1000, 9.44);
 ok('50 recensioni del secondo anno non pesano piu\' di 3 dell\'ultimo', PB.anni[0].quota > PB.anni[1].quota * 10, true);
 ok('un anno vuoto non conta: il suo peso va agli altri',
-   Math.round(punteggioBooking(A.concat(C3), REV_PESI_ANNI, OGGI).score * 1000) / 1000,
+   Math.round(punteggioBooking(A.concat(C3), PV, OGGI).score * 1000) / 1000,
    Math.round((0.9 * 10 + 0.04 * 2) / 0.94 * 1000) / 1000);
-ok('a 36 mesi esce', punteggioBooking([_r(1095, 1), _r(5, 9)], REV_PESI_ANNI, OGGI).score, 9);
+ok('a 36 mesi esce', punteggioBooking([_r(1095, 1), _r(5, 9)], PV, OGGI).score, 9);
 ok('a 364 giorni e\' ancora ultimo anno, a 365 no', _revAnno(364.9) + '/' + _revAnno(365), '0/1');
 // La nuova recensione sposta la media dell'ULTIMO anno: calcolo esatto, non approssimato.
-var dopo = punteggioBooking(A.concat(B, C3, [_r(0, 5)]), REV_PESI_ANNI, OGGI).score;
+var dopo = punteggioBooking(A.concat(B, C3, [_r(0, 5)]), PV, OGGI).score;
 ok('impatto di un 5 calcolato esatto', Math.round(revConNuove(PB, 5) * 1e6), Math.round(dopo * 1e6));
 ok('peso di una recensione: quota dell\'anno divisa per quante sono', Math.round(revPesoDi(PB, 420) * 1e6), Math.round(PB.anni[1].quota / 50 * 1e6));
 // Booking arrotonda (8.85 -> 8.9), senza farsi ingannare dalla virgola mobile.
@@ -1320,17 +1322,53 @@ ok('niente calibrazione a emivita', typeof calibraHalfLife === 'undefined' && ty
 ok('l\'ultimo punto dell\'andamento non guarda nel futuro', /Math\.min\(refDate\.getTime\(\)\+30\*24\*60\*60\*1000,Date\.now\(\)\)/.test(String(openScoreTrend)), true);
 ok('andamento score con due decimali', /pt\.v\.toFixed\(2\)/.test(String(openScoreTrend)) && !/pt\.v\.toFixed\(1\)/.test(String(openScoreTrend)), true);
 ok('grafico e scadenze usano la stessa formula della card',
-   /REV_PESI_ANNI/.test(String(openScoreTrend)) && /REV_PESI_ANNI/.test(String(revRenderExpiring)), true);
+   /punteggioBooking\(scored,revPesiAl\(refTs\),refTs\)/.test(String(openScoreTrend)) && /REV_PESI_ANNI/.test(String(revRenderExpiring)), true);
 // Previsioni
 var SIM = A.concat(B);
 ok('obiettivo raggiungibile con dei 10', revSimulaTarget(SIM, REV_PESI_ANNI, 9.9, 10, 3 / 365, OGGI).raggiungibile, true);
 ok('con voti sotto la soglia non si arriva mai', revSimulaTarget(SIM, REV_PESI_ANNI, 9.9, 9, 3 / 365, OGGI).motivo, 'flusso');
-// La leva vera: le recensioni che compiono un anno passano dal 90% al 6%.
-var EF = revEffettoScadenze([_r(300, 10), _r(30, 6), _r(400, 6)], REV_PESI_ANNI, OGGI, 90);
+// La leva vera: le recensioni che compiono un anno passano alla fascia del secondo anno.
+var EF = revEffettoScadenze([_r(300, 10), _r(30, 6), _r(400, 6)], PV, OGGI, 90);
 ok('si vede chi compie un anno nei prossimi 90 giorni', EF.nCambio, 1);
 ok('e il punteggio scende da solo se era un 10', EF.deriva < 0, true);
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+sez('Punteggio Booking: il cambio di pesi di ottobre 2026 (26/11/2026)');
+// Dal 09/10/2026 la formula 90/6/4 sbagliava 8 letture vere su 9, sempre in eccesso: fra il
+// 03/10 e il 09/10 Booking ha cambiato i pesi. Sulle letture di dopo: 70/30/0 (il terzo
+// anno non conta, una recensione esce a 24 mesi). Le letture di PRIMA restano verificate
+// coi pesi di allora: con un solo peso per tutto il passato il pannello Verifica le
+// segnerebbe sbagliate. Qui solo voti inventati.
+ok('pesi di oggi 70/30/0', REV_PESI_ANNI.join('/'), '0.7/0.3/0');
+ok('dal 06/10/2026 i pesi nuovi', revPesiAl(new Date('2026-10-06T00:00:00')).join('/'), '0.7/0.3/0');
+ok('il 05/10/2026 ancora i vecchi', revPesiAl(new Date('2026-10-05T23:59:00')).join('/'), '0.9/0.06/0.04');
+ok('senza data: i pesi di oggi', revPesiAl().join('/'), REV_PESI_ANNI.join('/'));
+// Stesso insieme, due momenti: ultimo anno tutto 10, secondo anno tutto 6.
+var T1 = new Date('2026-09-01T12:00:00').getTime(), T2 = new Date('2026-11-20T12:00:00').getTime();
+function _rt(ts, gg, v) { return { _dateTs: ts - gg * GG, _score: v }; }
+var REC1 = [_rt(T1, 10, 10), _rt(T1, 100, 10), _rt(T1, 500, 7), _rt(T1, 600, 7)];
+// a T1: (0.9*10 + 0.06*7) / 0.96 (terzo anno vuoto, peso ridistribuito) = 9.81 → 9.8
+// a T2 (80 giorni dopo, nessuna nuova): 0.7*10 + 0.3*7 = 9.1 (coi vecchi pesi sarebbe 9.8)
+var VER = revVerifica(REC1, [{ ts: new Date(T1).toISOString(), display: 9.8 }, { ts: new Date(T2).toISOString(), display: 9.1 }], T2);
+ok('lettura di settembre verificata coi pesi di settembre', VER.righe.find(function (r) { return r.ts === new Date(T1).toISOString(); }).ok, true);
+ok('lettura di novembre verificata coi pesi nuovi', VER.righe.find(function (r) { return r.ts === new Date(T2).toISOString(); }).ok, true);
+ok('tutte e due giuste', VER.nOk + '/' + VER.nTot, '2/2');
+// Il terzo anno non conta più: una recensione di 30 mesi non sposta niente.
+var OG = new Date('2026-11-20T12:00:00').getTime();
+ok('un 1 di 30 mesi fa non conta più',
+   punteggioBooking([_rt(OG, 5, 9), _rt(OG, 900, 1)], REV_PESI_ANNI, OG).score, 9);
+ok('con i vecchi pesi contava', punteggioBooking([_rt(OG, 5, 9), _rt(OG, 900, 1)], PV, OG).score < 9, true);
+// Le "scadenze" sono a 24 mesi: lì una recensione smette di contare.
+ok('finestra utile oggi: 24 mesi', revFinestraUtile(REV_PESI_ANNI), 730);
+ok('finestra utile coi vecchi pesi: 36 mesi', revFinestraUtile(PV), 1095);
+var EF2 = revEffettoScadenze([_rt(OG, 30, 9), _rt(OG, 700, 2), _rt(OG, 1000, 2)], REV_PESI_ANNI, OG, 90);
+ok('esce chi compie 24 mesi, non chi ne ha già 33', EF2.nUscita, 1);
+ok('e il punteggio sale se era un 2', EF2.deriva > 0, true);
+ok('il pannello scadenze guarda la finestra utile', /revFinestraUtile\(REV_PESI_ANNI\)/.test(String(revRenderExpiring)), true);
+ok('la verifica usa i pesi di quel momento', /revPesiAl\(t\)/.test(String(revVerifica)), true);
+
 sez('Polling: si ferma a scheda nascosta, riparte quando torna');
 // Un cancello rotto qui non si vede: se il giro non ripartisse piu', la postazione
 // resterebbe ferma senza dire niente — ed e' proprio da una copia ferma che sono partite

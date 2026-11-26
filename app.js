@@ -6885,7 +6885,9 @@ function openScoreTrend(p){
     // Fine del mese, ma mai oltre oggi: per il mese in corso la "fine del mese" sta nel
     // futuro e l'ultimo punto non coincideva con la card (8.94 contro 8.916, 04/10/2026).
     const refTs=Math.min(refDate.getTime()+30*24*60*60*1000,Date.now());
-    return punteggioBooking(scored,REV_PESI_ANNI,refTs).score;
+    // Pesi di quel mese: il grafico racconta cosa mostrava Booking allora (il cambio di
+    // ottobre 2026 non si spalma sul passato). L'ultimo punto coincide con la card.
+    return punteggioBooking(scored,revPesiAl(refTs),refTs).score;
   }
   const vals=months.map(m=>calcWeightedAt(m));
   const validVals=vals.filter(v=>v!==null);
@@ -7855,7 +7857,8 @@ function revRenderExpiring(p){
   if(!el||!data.length)return;
   const nowTs=Date.now();
   const now=new Date(); now.setHours(0,0,0,0);
-  const THREE_YEARS=3*365.25*24*60*60*1000;
+  // Una recensione "scade" quando smette di contare: con 70/30/0 a 24 mesi, non a 36.
+  const THREE_YEARS=revFinestraUtile(REV_PESI_ANNI)*86400000;
   // Settimane
   const dayOfWeek=now.getDay()===0?6:now.getDay()-1;
   const startThisWeek=new Date(now); startThisWeek.setDate(now.getDate()-dayOfWeek);
@@ -7965,8 +7968,8 @@ function revRenderExpiring(p){
   const proiezioneDelta=scoreAfterBoth!==null&&scoreAttuale!==null?(Math.round(scoreAfterBoth*10)/10)-(Math.round(scoreAttuale*10)/10):null;
   const proiezioneColor=proiezioneDelta===null?'var(--text-dim)':proiezioneDelta>=0?'var(--green)':'var(--red)';
   // ── Modalità compatta ────────────────────────────────────────────────────
-  // Le recensioni che escono dai 36 mesi stanno nel terzo anno, che vale il 4% in tutto
-  // diviso fra tutte le sue recensioni: su una struttura grande una singola uscita sposta
+  // Le recensioni che smettono di contare stanno nell'ultima fascia con peso (dal 10/2026
+  // il secondo anno, 30%; prima il terzo, 4%), diviso fra tutte le sue recensioni: su una struttura grande una singola uscita sposta
   // il punteggio di millesimi. Resta rilevante solo quando il terzo anno ha pochissime
   // recensioni (struttura piccola), e allora il pannello si apre per intero.
   // Criterio: si guarda lo scostamento EFFETTIVAMENTE calcolato, non una stima.
@@ -7980,7 +7983,7 @@ function revRenderExpiring(p){
       <span style="flex:1;min-width:220px;">${allExpiring.length===0
         ?`<strong style="color:var(--text);">Nessuna recensione in scadenza</strong> questa o la prossima settimana.`
         :`<strong style="color:var(--text);">${allExpiring.length} recension${allExpiring.length===1?'e in scadenza':'i in scadenza'}</strong> questa/prossima settimana, ma pesano solo il <strong style="color:var(--text);">${(_expQuota*100).toFixed(2)}%</strong> del punteggio: uscendo lo sposterebbero di ${_expDelta<0.005?'meno di 0,01':_expDelta.toFixed(3)}, invisibile sul valore mostrato da Booking.`}
-        <span style="color:var(--text-dim);">Tutto il terzo anno vale il ${Math.round(REV_PESI_ANNI[2]*100)}% del punteggio: la leva vera è il voto medio dell'ultimo anno.</span></span>
+        <span style="color:var(--text-dim);">Una recensione smette di contare a ${Math.round(revFinestraUtile(REV_PESI_ANNI)/365)*12} mesi, quando è già nella fascia che vale il ${Math.round(REV_PESI_ANNI[Math.round(revFinestraUtile(REV_PESI_ANNI)/365)-1]*100)}%: la leva vera è il voto medio dell'ultimo anno.</span></span>
     </div>`;
     return;
   }
@@ -8074,8 +8077,34 @@ function revRenderExpiring(p){
 // NON reintrodurre un parametro per struttura: con una sola cifra decimale da rispettare,
 // un parametro libero spiega qualunque lettura e non prevede niente (è ciò che è successo
 // con l'emivita). Le letture servono a VERIFICARE la formula, non a piegarla.
-const REV_PESI_ANNI=[0.90,0.06,0.04];
+//
+// IL CAMBIO DI OTTOBRE 2026 (rifatta la prova il 26/11/2026, backup dello stesso giorno):
+// fino al 03/10 la formula 90/6/4 indovinava 27 letture su 32; dal 09/10 ne indovinava
+// 1 su 9, sempre in eccesso (SoulArt 8.88 contro 8.8, Principe 6.86 contro 6.7). Nei dati
+// niente di storto (nessun doppione, voti 1-10): è cambiato Booking, fra il 03/10 e il
+// 09/10. Sulle letture di dopo il cambio i pesi migliori sono 70/30/0 — l'ultimo anno
+// conta meno, il secondo molto di più, il terzo NIENTE (una recensione smette di contare
+// a 24 mesi) — 7 su 9; stimati su 5 strutture e provati sulla sesta, in 5 casi su 6 la
+// stima ricade lì, e fuori campione indovinano 6 su 9 contro 1 su 9.
+// Le letture vecchie restano verificate coi pesi di ALLORA (revPesiAl): altrimenti il
+// pannello Verifica segnerebbe sbagliate letture che erano giuste.
+const REV_PESI_STORIA=[
+  {dal:'2026-10-06T00:00:00',pesi:[0.70,0.30,0]},
+  {dal:null,                 pesi:[0.90,0.06,0.04]}
+];
+// Pesi in vigore in quel momento (ts o Date). Senza data: quelli di oggi.
+function revPesiAl(t){
+  const ts=t==null?Date.now():(t instanceof Date?t.getTime():+t);
+  for(const f of REV_PESI_STORIA){if(f.dal===null||ts>=+new Date(f.dal))return f.pesi;}
+  return REV_PESI_STORIA[REV_PESI_STORIA.length-1].pesi;
+}
+const REV_PESI_ANNI=REV_PESI_STORIA[0].pesi;   // quelli di oggi: card, previsioni, pannelli
 const REV_FINESTRA_GG=1095;        // 36 mesi: dopo, Booking toglie la recensione
+// Età (giorni) a cui una recensione smette DAVVERO di contare: fine dell'ultimo anno con
+// peso > 0. Con 70/30/0 sono 24 mesi, non 36: le "scadenze" sono lì.
+function revFinestraUtile(pesi=REV_PESI_ANNI){
+  return pesi[2]>0?REV_FINESTRA_GG:(pesi[1]>0?730:365);
+}
 const REV_CALIB_KEY='qm_rev_calib';
 const REV_CALIB_STALE_GG=90;       // oltre questo, conviene registrare una lettura nuova
 let REV_CALIB={};
@@ -8227,7 +8256,7 @@ function revVerifica(recensioni,osservazioni,importTs){
     const t=+new Date(o.ts),display=Number(o.display);
     if(importTs!=null&&t>importTs)return{ts:o.ts,display,stima:null,ok:null,attesa:true,nRec:0};
     const sub=rec.filter(r=>_revTs(r)<=t);
-    const s=punteggioBooking(sub,REV_PESI_ANNI,t).score;
+    const s=punteggioBooking(sub,revPesiAl(t),t).score;
     return{ts:o.ts,display,stima:s,ok:s!==null&&revDisplay(s)===display,attesa:false,nRec:sub.length};
   }).sort((a,b)=>+new Date(b.ts)-+new Date(a.ts));
   const valutate=righe.filter(r=>!r.attesa&&r.stima!==null);
@@ -8333,20 +8362,22 @@ function revSimulaTarget(scored,pesi,targetVisualizzato,votoNuove,recAlGiorno,og
 }
 
 // ── Cosa cambia da solo nei prossimi giorni ─────────────────────────────────
-// Con le fasce annuali la leva NON sono le uscite dai 36 mesi (il terzo anno vale il 4%
-// in tutto) ma il PASSAGGIO D'ANNO: una recensione che compie 12 mesi scende dalla fascia
-// che vale il 90% a quella che vale il 6%. Se quelle che compiono l'anno sono buone, il
+// Con le fasce annuali la leva è il PASSAGGIO D'ANNO: una recensione che compie 12 mesi
+// scende dalla fascia dell'ultimo anno (70% dal 10/2026, prima 90%) a quella del secondo
+// (30%, prima 6%); dal 10/2026 a 24 mesi smette di contare del tutto (terzo anno a 0%). Se quelle che compiono l'anno sono buone, il
 // punteggio cala anche senza recensioni nuove; se sono cattive, sale.
 // La deriva = dove va il punteggio fra N giorni senza nuove recensioni.
 function revEffettoScadenze(scored,pesi,oggiTs,orizzonteGg){
   pesi=Array.isArray(pesi)?pesi:REV_PESI_ANNI;
   const ora=punteggioBooking(scored,pesi,oggiTs);
   const fut=punteggioBooking(scored,pesi,oggiTs+orizzonteGg*86400000);
+  // "Escono" quando smettono di contare: a 24 mesi con 70/30/0, a 36 con un terzo anno pesato.
+  const finUtile=revFinestraUtile(pesi);
   let pesoUscita=0,nUscita=0,sUscita=0,pesoCambio=0,nCambio=0,sCambio=0;
   for(const r of scored){
     const gg=(oggiTs-r._dateTs)/86400000;
     if(!(gg>=0)||gg>=REV_FINESTRA_GG)continue;
-    if(REV_FINESTRA_GG-gg<=orizzonteGg){pesoUscita+=revPesoDi(ora,gg);nUscita++;sUscita+=r._score;}
+    if(gg<finUtile&&finUtile-gg<=orizzonteGg){pesoUscita+=revPesoDi(ora,gg);nUscita++;sUscita+=r._score;}
     if(gg<365&&365-gg<=orizzonteGg){pesoCambio+=revPesoDi(ora,gg);nCambio++;sCambio+=r._score;}
   }
   return{
@@ -8424,15 +8455,15 @@ function revRenderCalib(p,pb){
     ${avviso}
     ${ossHtml}
     <div style="margin-top:8px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;">
-      Come Booking: <strong style="color:var(--text);">media dei voti di ogni anno</strong>, poi le tre medie pesate <strong style="color:var(--text);">${pesiTxt}</strong> (ultimi 12 mesi · 12–24 mesi · 24–36 mesi). Dopo 36 mesi la recensione esce. ${pb&&pb.nInFinestra?`Qui: ${pb.nInFinestra} recensioni nei 36 mesi, ${pb.anni[0].n} nell'ultimo anno.`:''}
-      <span style="display:block;margin-top:6px;">Booking non pubblica la formula: questa è quella ricostruita da uno studio universitario del 2025 (85/10/5), con i pesi rifiniti sulle letture vere delle nostre 7 strutture. Il ✓ e la ✗ qui sopra dicono, lettura per lettura, se coincide.</span>
+      Come Booking: <strong style="color:var(--text);">media dei voti di ogni anno</strong>, poi le tre medie pesate <strong style="color:var(--text);">${pesiTxt}</strong> (ultimi 12 mesi · 12–24 mesi · 24–36 mesi). ${REV_PESI_ANNI[2]>0?'Dopo 36 mesi la recensione esce.':'Dopo 24 mesi la recensione non conta più.'} ${pb&&pb.anni?`Qui: ${pb.anni[0].n+pb.anni[1].n+(REV_PESI_ANNI[2]>0?pb.anni[2].n:0)} recensioni che contano, ${pb.anni[0].n} nell'ultimo anno.`:''}
+      <span style="display:block;margin-top:6px;">Booking non pubblica la formula: questa è quella ricostruita da uno studio universitario del 2025, con i pesi ricavati dalle letture vere delle nostre 7 strutture. Fra il 3 e il 9 ottobre 2026 Booking ha cambiato i pesi (prima 90 · 6 · 4): ogni lettura qui sopra è verificata coi pesi in vigore quel giorno. Il ✓ e la ✗ dicono, lettura per lettura, se coincide.</span>
     </div>
   </div>`;
 }
 
 // ── UI: impatto di una nuova recensione ─────────────────────────────────────
 // Calcolo esatto (revConNuove): la nuova recensione sposta la media dell'ULTIMO ANNO, che
-// vale il 90%. L'asimmetria è l'informazione che cambia le priorità: un voto basso pesa
+// vale il 70% (90% fino a ottobre 2026). L'asimmetria è l'informazione che cambia le priorità: un voto basso pesa
 // molto più di un voto pieno, perché la media è già alta.
 function revRenderImpact(p,pb,scored,oggiTs){
   const el=document.getElementById('rev-impact-'+p);
@@ -8441,7 +8472,7 @@ function revRenderImpact(p,pb,scored,oggiTs){
   const delta=v=>revConNuove(pb,v)-pb.score;
   const d10=delta(10),d5=delta(5);
   const rapporto=d10>0?Math.abs(d5)/d10:null;
-  // Riga "fra 90 giorni": il passaggio d'anno è la leva vera, le uscite dai 36 mesi no.
+  // Riga "fra 90 giorni": il passaggio d'anno e l'uscita a 24 mesi (dal 10/2026).
   const scad90=(scored&&oggiTs)?revEffettoScadenze(scored,REV_PESI_ANNI,oggiTs,90):null;
   let scadHtml='';
   if(scad90&&(scad90.nCambio>0||scad90.nUscita>0)){
@@ -8452,8 +8483,8 @@ function revRenderImpact(p,pb,scored,oggiTs){
     scadHtml=`<div style="margin-top:10px;background:${rilevante?'var(--accent-bg)':'var(--surface2)'};border:1px solid var(--border-light);border-radius:7px;padding:10px 13px;font-size:var(--fs-xs);color:var(--text);line-height:1.6;">
       <strong style="color:var(--text);">Fra 90 giorni</strong>
       ${scad90.nCambio>0?` <strong style="color:var(--text);">${scad90.nCambio}</strong> recensioni${scad90.mediaCambio!=null?` (media ${scad90.mediaCambio.toFixed(1)})`:''} compiono un anno e passano dalla fascia che vale il ${Math.round(REV_PESI_ANNI[0]*100)}% a quella che vale il ${Math.round(REV_PESI_ANNI[1]*100)}%.`:''}
-      ${scad90.nUscita>0?` ${scad90.nUscita} escono dai 36 mesi (in tutto ${(scad90.quotaPeso*100).toFixed(1).replace('.',',')}% del punteggio: quasi niente).`:''}${derivaTxt}
-      <span style="display:block;margin-top:5px;color:var(--text-muted);">Se quelle che compiono l'anno sono migliori della media di oggi, il punteggio cala da solo; se sono peggiori, sale. Per questo conta il voto medio dell'<strong style="color:var(--text);">ultimo anno</strong>, non quello di tutti e tre.</span>
+      ${scad90.nUscita>0?` ${scad90.nUscita} compiono ${Math.round(revFinestraUtile(REV_PESI_ANNI)/365)*12} mesi e smettono di contare (in tutto ${(scad90.quotaPeso*100).toFixed(1).replace('.',',')}% del punteggio).`:''}${derivaTxt}
+      <span style="display:block;margin-top:5px;color:var(--text-muted);">Se quelle che compiono l'anno sono migliori della media di oggi, il punteggio cala da solo; se sono peggiori, sale. Per questo conta soprattutto il voto medio dell'<strong style="color:var(--text);">ultimo anno</strong>, poi quello del secondo.</span>
     </div>`;
   }
   // La domanda operativa non è "di quanto scende il decimale interno" ma "quale voto fa
@@ -8595,7 +8626,7 @@ function revRenderStats(p){
   const avgCard=g('rev-avg');
   if(avgCard&&avgCard.closest('.kpi-card'))avgCard.closest('.kpi-card').title='Calcolato come Booking: media dei voti di ogni anno, pesata '+pesi.map(w=>Math.round(w*100)+'%').join(' / ')+'. Clicca per vedere l\u2019andamento.';
   g('rev-count').textContent=data.length;
-  // Quante stanno nell'ultimo anno: è lì che sta il 90% del punteggio.
+  // Quante stanno nell'ultimo anno: è lì che sta la parte più grossa del punteggio (70%).
   g('rev-count-sub').textContent=data.length+' importate · '+pb.anni[0].n+' negli ultimi 12 mesi';
   g('rev-noreply').textContent=noReply;
   g('rev-noreply-sub').textContent=noReply>0?noReply+' in attesa di risposta':'Tutte con risposta';
@@ -8631,7 +8662,7 @@ function revRenderStats(p){
     // Booking arrotonda a una cifra: per vedere 8.9 basta superare 8.85, non 8.90.
     const soglia=revSoglia(target);
     // Recensioni in scadenza — nota informativa, il pannello dedicato resta separato
-    const THREE_YEARS=3*365.25*24*60*60*1000;
+    const THREE_YEARS=revFinestraUtile(pesi)*86400000;   // quando smette di contare
     const expiringThisMonth=scored.filter(r=>{
       const exp=r._dateTs+THREE_YEARS;
       return exp>=now&&exp<=(now+30*24*60*60*1000);

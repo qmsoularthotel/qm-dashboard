@@ -13,7 +13,43 @@ Nolfo-Aiassa, Martin-Fuentes, *The weight of a review: Assessing Booking.com's n
 system*, Tourism and Hospitality Research, settembre 2025). Un anno senza recensioni non conta e
 il suo peso va agli altri. La cifra mostrata è **arrotondata** a un decimale (8.85 → 8.9).
 
-Compass usa **90% / 6% / 4%** (`REV_PESI_ANNI`), uguali per tutte le strutture.
+Compass usa **70% / 30% / 0%** dal 06/10/2026 (prima **90% / 6% / 4%**), uguali per tutte le
+strutture. I pesi stanno in `REV_PESI_STORIA` (con la data da cui valgono); `REV_PESI_ANNI` sono
+quelli di oggi, `revPesiAl(ts)` quelli di un momento passato.
+
+### Il cambio di ottobre 2026 (rifatta la prova il 26/11/2026)
+
+Il QM segnala: "il calcolo è totalmente inaffidabile". Prova sul backup del 26/11/2026, 41 letture:
+
+| Periodo | 90/6/4 | 70/30/0 |
+|---|---|---|
+| letture fino al 03/10/2026 (32) | **27** | 19 |
+| letture dal 09/10/2026 (9) | 1 — sempre in eccesso (SoulArt 8.88 contro 8.8, Principe 6.86 contro 6.7) | **7** |
+
+Nei dati niente di storto (nessun doppione, voti 1–10, mesi al loro posto): è **cambiato Booking**,
+fra il 03/10 (Art Resort 8.6 ancora giusto coi vecchi pesi) e il 09/10 (Art Resort 8.5, sbagliato).
+Sulle letture di dopo, scarto totale dall'intervallo giusto: 0.38 con 90/6/4, 0.07 con 70/30/0.
+Fuori campione (stima su 5 strutture, prova sulla sesta): in 5 casi su 6 la stima ricade su
+~70/30/0, e indovina **6 su 9 contro 1 su 9**. La media semplice di 24 mesi ne fa 6 su 9: il
+senso è lo stesso — **il terzo anno non conta più**, il secondo pesa molto di più.
+
+Conseguenze nel codice:
+- `revVerifica` verifica ogni lettura **coi pesi di quel giorno** (`revPesiAl(t)`), e il grafico
+  **Andamento score** calcola ogni mese coi pesi di quel mese: un peso unico per tutto il passato
+  segnerebbe sbagliate le letture vecchie che erano giuste.
+- Una recensione smette di contare a **24 mesi** (`revFinestraUtile`): lì guardano il pannello
+  **Recensioni in scadenza**, la riga "fra 90 giorni" (`revEffettoScadenze.nUscita`) e la nota
+  "in scadenza entro 30gg" dell'obiettivo. Prima guardavano i 36 mesi, che ora non spostano niente.
+- `REV_FINESTRA_GG` resta 1095: serve alla verifica delle letture di prima del cambio.
+
+Dopo il cambio, sul backup del 26/11: **34 su 41** (SoulArt 9/9, Boutique 10/10, Art Resort 5/5,
+Santa Brigida 5/6, San Liborio 3/4). Fuori restano:
+- **Principe 23/11**: 6.759 contro 6.7 — sopra la soglia di 9 millesimi, sul filo.
+- **Mastrangelo**: Booking sta **sopra** Compass di circa 0.1 dal 13/09 (7.4 contro 7.29), con
+  qualunque peso. Non è la formula: probabilmente recensioni basse nel CSV che Booking non conta
+  (tolte, o contestate e accolte). Con 275 recensioni, poche in meno spostano la cifra.
+
+Se Booking cambia ancora: nuova riga in cima a `REV_PESI_STORIA`, mai riscrivere quelle vecchie.
 
 ### Perché è cambiato (04/10/2026) — e cosa NON rifare
 
@@ -74,7 +110,7 @@ c'erano ancora o che Booking ha tolto/aggiunto in ritardo.
 | `revEffettoScadenze(...)` | cosa cambia da solo: `nCambio`/`mediaCambio` (compiono un anno: dal 90% al 6%), `nUscita` (escono dai 36 mesi), `deriva` |
 | `revRenderCalib` / `revRenderImpact` / `revRenderDistrib` | i pannelli Verifica, Impatto della prossima recensione, Distribuzione del peso |
 
-**Tutti i punti che mostrano il punteggio usano `punteggioBooking` + `REV_PESI_ANNI`**: card
+**Tutti i punti che mostrano il punteggio di oggi usano `punteggioBooking` + `REV_PESI_ANNI`** (il passato: `revPesiAl`): card
 "Punteggio medio" (`revRenderStats`), grafico "Andamento score" (`openScoreTrend`), "Score
 attuale" del pannello Recensioni in scadenza (`revRenderExpiring`). Un modello diverso in uno
 solo dei tre mostra numeri diversi per lo stesso giorno (è già successo).
