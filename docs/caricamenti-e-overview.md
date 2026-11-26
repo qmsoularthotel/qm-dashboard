@@ -157,7 +157,7 @@ chiama `bkfSheetSync`/`bkfSheetARSync`, che ora restituiscono l'esito e segnano 
 `qm_bsheet` ({sa, ar}: si fonde col cloud, tiene il più recente). La tessera è verde solo con
 **tutte e due** inviate **oggi**; a mezzanotte torna «Da caricare oggi» ed entra in «Mancano».
 Se il PDF parte dopo dopodomani o ha meno di 8 giorni lo dice in rosso.
-Provato sui due PDF reali del 26/11: 8 righe identiche al foglio compilato a mano dal QM.
+Provato sui due PDF reali del 26/11: 8 righe identiche al foglio compilato a mano dal QM. Invio vero ai due fogli Google confermato dal QM lo stesso giorno («funziona tutto»).
 **Perché non dal file Prenotazioni o dal «Pasti del periodo»**: le Prenotazioni dei colleghi non
 arrivano a 9 giorni; il «Pasti del periodo» non ha i RO (R sempre 0, le camere RO sono caselle
 vuote come i blocchi). Solo il Report pasti ha BB e RO precisi. La lettura AI nel Breakfast Sheet
