@@ -1663,7 +1663,8 @@ function hkpNRender(p){
   const today=new Date();const isCurMon=today.getFullYear()===y&&today.getMonth()+1===m;
   const monEl=document.getElementById('hkpN-'+p+'-month');
   if(monEl){
-    monEl.innerHTML='<span style="font-weight:700;font-size:var(--fs-sm);color:var(--text);">'+HKP_MON_NAMES[m-1]+'</span> <span style="color:var(--text-dim);font-size:var(--fs-xs);">'+y+'</span>'+(isCurMon?' <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);vertical-align:middle;margin-left:4px;" title="Mese corrente"></span>':'');
+    // Il mese intero è già nel titolo: qui basta l'abbreviazione, e «mese in corso» invece del pallino.
+    monEl.textContent=HKP_MON_NAMES[m-1].slice(0,3)+' '+y;monEl.classList.toggle('hkx-corrente',isCurMon);monEl.title=isCurMon?'Mese in corso':'';
   }
   const tab=HKP_NTAB[p];
   // Testata come Stock e Registration (26/11/2026): riga oro «SoulArt Hotel · camere», titolo = mese.

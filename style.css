@@ -1303,3 +1303,13 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 /* Sulle colonne velate (sabato, domenica, oggi) il fondo bianco dei disegni non deve vedersi: lo
    z-index del contenitore isola il disegno, quindi il «multiply» va sul contenitore (26/11/2026). */
 .hkx-c .hkpSymImg{mix-blend-mode:multiply;}
+/* Operativa HKP › comandi in alto (26/11/2026, QM: «molto brutto»): un solo gruppo tenue per il
+   mese (‹ Nov 2026 ›), Stampa secondario, Salva principale, tutti alla stessa altezza. */
+.hkx-comandi{display:flex;align-items:center;gap:8px;}
+.hkx-mese{display:inline-flex;align-items:center;height:32px;border:1px solid var(--border-light);border-radius:16px;background:#fff;overflow:hidden;}
+.hkx-mese button{width:32px;height:30px;border:none;background:transparent;color:var(--accent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+.hkx-mese button:hover{background:var(--accent-bg);}
+.hkx-mese span{min-width:74px;text-align:center;font-size:13px;font-weight:600;color:var(--text);padding:0 2px;}
+.hkx-mese span.hkx-corrente{color:var(--gold);}
+.hkx-stampa{height:32px;border-radius:16px;}
+.hkx-comandi .inv8-btn{height:32px;border-radius:16px;padding:0 18px;}
