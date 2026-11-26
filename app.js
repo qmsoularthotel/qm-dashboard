@@ -7191,11 +7191,14 @@ function _bsheetOggi(ts){return !!ts&&new Date(ts).toDateString()===new Date().t
 function _bsheetSlot(){
   const st=_bsheetStato(),sa=_bsheetOggi(st.sa),ar=_bsheetOggi(st.ar);
   const slot=document.getElementById('uc-bsheet');if(!slot)return;
-  const sub=sa&&ar?'SoulArt e Galleria oggi':!sa&&!ar?'Da caricare oggi':'Manca '+(sa?'Galleria':'SoulArt');
+  // Come le altre tessere: «↑ 26 nov 12:35» quando è tutto fatto (l'invio più recente).
+  const sub=sa&&ar?fmtUploadTs(Math.max(st.sa,st.ar)):!sa&&!ar?'Da caricare oggi':'Manca '+(sa?'Galleria':'SoulArt');
   slot.classList.toggle('loaded',sa&&ar);
   const s=document.getElementById('uc-bsheet-sub');if(s)s.textContent=sub;
-  const f=(id,ok,ts)=>{const e=document.getElementById(id);if(e)e.textContent=ok?'inviato oggi alle '+new Date(ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'non ancora inviato oggi';};
+  const f=(id,ok,ts)=>{const e=document.getElementById(id);if(e){e.textContent=ok?'inviato alle '+new Date(ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'da caricare';e.classList.toggle('no',!ok);}};
   f('bsheetSaQuando',sa,st.sa);f('bsheetArQuando',ar,st.ar);
+  const t=document.getElementById('bsheetTs'),ult=Math.max(+st.sa||0,+st.ar||0);
+  if(t){t.textContent=ult?fmtUploadTs(ult):'';t.classList.toggle('visible',!!ult);}
   try{ucUpdateProgress();}catch(e){}
 }
 // {sa:ts, ar:ts}: si scrive leggendo prima il cloud e tenendo il più recente di ognuno (più postazioni).
@@ -18413,6 +18416,7 @@ async function prenHandlePdf(file){
     // Senza questa riga, dopo un Cmd+R la tessera torna a "Non caricato" pur essendo stati
     // aggiornati arrivi e colazioni: identica a un caricamento mai avvenuto.
     try{localStorage.setItem(PREN_RIASS_KEY,JSON.stringify({riass:riass,ts:ad._ts}));}catch(e){}
+    try{const ri=document.getElementById('prenRiass');if(ri)ri.textContent=riass;const li=document.getElementById('prenLoadedInfo');if(li)li.classList.add('visible');}catch(e){}
     try{refreshOverviewForDate(customDate||new Date());}catch(e){}
   }catch(err){
     msg('Errore nella lettura del PDF: '+(err&&err.message?err.message:err));
@@ -18440,6 +18444,7 @@ function prenRestoreSlot(){
   if(!s||!s.riass)return;
   ucSetState('pren','loaded',s.riass,true);
   const li=document.getElementById('prenLoadedInfo');if(li)li.classList.add('visible');
+  const ri=document.getElementById('prenRiass');if(ri)ri.textContent=s.riass;
   if(s.ts){try{restoreUploadTs('prenTs',s.ts);}catch(e){}}
 }
 

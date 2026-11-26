@@ -1238,7 +1238,9 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
    con sotto quando è stato inviato oggi. Classi di sempre (.upload-box). */
 .bsheet-box{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 4px;}
 .bsheet-box .upload-box{padding:10px 6px;}
-.bsheet-quando{font-size:10.5px;color:var(--text-dim);margin-top:4px;}
+.bsheet-riga{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-xxs);color:var(--text-muted);padding:1px 0;}
+.bsheet-riga b{font-weight:600;color:var(--green);}
+.bsheet-riga b.no{color:var(--red);}
 /* Il logo Compass ora sta in una riga da solo: larghezza intera, più basso di una tessera (QM, 26/11). */
 .uc-row-cards .uc-brand-solo{flex:1 1 100%;min-height:64px;}
 .turni-status.error{display:block;background:var(--red-bg);border:1px solid rgba(198,40,40,.25);color:var(--red);}
