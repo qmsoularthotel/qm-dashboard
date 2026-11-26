@@ -1313,3 +1313,23 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .hkx-mese span.hkx-corrente{color:var(--gold);}
 .hkx-stampa{height:32px;border-radius:16px;}
 .hkx-comandi .inv8-btn{height:32px;border-radius:16px;padding:0 18px;}
+/* Applicazioni più leggere (26/11/2026, QM: «pesante»): schede senza altezza minima, stato senza
+   riquadro colorato (pallino + parola), «Copia link» come collegamento e «Apri» piccolo a destra,
+   riquadri di Compass OPS senza bordi (colonne separate da una linea). */
+.miniapp-card{min-height:0;padding:14px 16px;}
+.miniapp-card-top{margin-bottom:10px;}
+.miniapp-stato{margin-bottom:12px;}
+.miniapp-st{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.miniapp-st-p{width:8px;height:8px;border-radius:50%;flex-shrink:0;align-self:center;}
+.miniapp-st-l{font-size:var(--fs-xs);font-weight:700;}
+.miniapp-st-k{font-size:var(--fs-xxs);color:var(--text-dim);margin-left:auto;}
+.miniapp-azioni{justify-content:flex-end;align-items:center;gap:6px;padding-top:10px;border-top:1px solid var(--border-light);}
+.miniapp-azioni .miniapp-btn{flex:0 0 auto;padding:5px 14px;border-radius:16px;font-size:12px;background:transparent;border-color:transparent;color:var(--accent);}
+.miniapp-azioni .miniapp-btn:hover{background:var(--accent-bg);border-color:transparent;}
+.miniapp-azioni .miniapp-btn-primario{background:var(--accent);border-color:var(--accent);color:#fff;}
+.miniapp-azioni .miniapp-btn-primario:hover{background:var(--accent);filter:brightness(1.15);}
+.ms-ops{gap:0;}
+.ms-ops-r{background:none;border:none;border-left:1px solid var(--border-light);border-radius:0;padding:2px 14px;}
+.ms-ops-r:first-child{border-left:none;padding-left:0;}
+.ms-ops-amber{border-color:var(--border-light);}
+@media(max-width:760px){.ms-ops-r{border-left:none;padding:6px 0;border-top:1px solid var(--border-light);}.ms-ops-r:first-child{border-top:none;}}

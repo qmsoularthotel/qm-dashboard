@@ -3221,10 +3221,11 @@ function miniappSaveBkfBanner(btn){
 function _miniappStatusHTML(color,label,kpi){
   const colorMap={green:{c:'var(--green)',bg:'var(--green-bg)'},amber:{c:'var(--amber)',bg:'var(--amber-bg)'},red:{c:'var(--red)',bg:'var(--red-bg)'}};
   const m=colorMap[color]||colorMap.green;
-  return`<div style="display:flex;align-items:center;gap:8px;background:${m.bg};border-radius:8px;padding:8px 12px;">
-    <span style="width:8px;height:8px;border-radius:50%;background:${m.c};flex-shrink:0;"></span>
-    <span style="font-size:var(--fs-xs);font-weight:700;color:${m.c};">${label}</span>
-    ${kpi?`<span style="font-size:var(--fs-xs);color:var(--text-dim);margin-left:auto;">${kpi}</span>`:''}
+  // Più leggero (26/11/2026, QM: «pesante»): niente riquadro colorato, solo pallino e parola colorata.
+  return`<div class="miniapp-st">
+    <span class="miniapp-st-p" style="background:${m.c};"></span>
+    <span class="miniapp-st-l" style="color:${m.c};">${label}</span>
+    ${kpi?`<span class="miniapp-st-k">${kpi}</span>`:''}
   </div>`;
 }
 function _miniappFmtTime(ts){
