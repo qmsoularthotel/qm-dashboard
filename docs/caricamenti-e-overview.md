@@ -144,21 +144,6 @@ Verificata riproducendo il report del PMS su 8 giorni su 8, per entrambe le righ
 
 Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
 
-### Breakfast Sheet SoulArt dalle Prenotazioni (26/11/2026)
-
-Il QM caricava ogni giorno a mano il Report pasti nel Breakfast Sheet (lettura AI, max 8 righe) e
-spesso se ne dimenticava. Ora `prenHandlePdf` (passo 3) chiama `bkfSheetDaPrenotazioni(pren, iso,
-per.al, true)`: `_bkfSheetDaPren` fa una riga per giorno **dal giorno del caricamento + 2 a + 14**
-(`BKF_SHEET_DA`/`BKF_SHEET_A`; caricando il 26/11 → dal 28/11 al 10/12, come il PDF del QM),
-**solo SoulArt e Boutique** (`BKF_SHEET_STRUTT`): `b` = pax in BB, `r` = pax in RO, mattino dopo
-la notte (`arrivo < giorno <= partenza`). I giorni oltre l'ultimo arrivo del file non si mandano
-(l'export non li copre): la nota sopra la tabella lo dice. Poi `bkfSheetSync()` manda al foglio
-Google **da solo**. Nel Breakfast Sheet c'è anche «Prendi dalle Prenotazioni» (rilegge
-`qm_pren_ultimo`) e il PDF resta come riserva.
-**Diverso da `qm_bkfData`**: lì le colazioni contano tutte le strutture (regola del Report pasti
-di Overview), qui solo Soul e Boutique, per scelta del QM. **La Galleria resta col PDF**: Art
-Resort e Santa Brigida non sono nel file Prenotazioni (`_prenStruttura` non le conosce).
-
 ### Ospiti BB Booking.com: solo colazione inclusa (22/11/2026)
 
 La lista «Ospiti BB Booking.com» (si chiamava «Colazione Booking.com») (Overview e `breakfast.html`) mostra **solo** le prenotazioni

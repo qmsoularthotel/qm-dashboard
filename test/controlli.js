@@ -3360,25 +3360,6 @@ sez('Inventario: rettifiche nell\'analisi');
   ok('analisi: senza scarti veri è stabile', _invAnalisi([{ type: 'init', qty: 50, ts: lun - 8 * 7 * G }].concat([8,7,6,5,4,3,2,1].map(function(w){ return { type: 'out', qty: 3, ts: lun - w * 7 * G + G }; })), [], ora).andamento, 'stabile');
   ok('analisi: niente decimali né giorni di autonomia', /autonomia|consumoSett|invSetPeriod/.test(String(invRenderAnalysis)), false);
   ok('catalogo e ordini: nomi e fornitori passano da _esc', /_esc\(p\.name\|\|bc\)/.test(String(invRenderCatalog)) && /_esc\(o\.fornitore/.test(String(invRenderOrders)) && /_esc\(it\.name\)/.test(String(invRenderOrders)), true);
-  {
-    // Breakfast Sheet dalle Prenotazioni (26/11/2026): da oggi+2 a oggi+14, solo Soul e Boutique.
-    const P = [
-      { struttura: 'SA', tratt: 'BB', pax: 2, arrivo: '2026-11-27', partenza: '2026-11-30' },   // 28, 29, 30
-      { struttura: 'BH', tratt: 'BB', pax: 3, arrivo: '2026-11-28', partenza: '2026-11-29' },   // 29
-      { struttura: 'BH', tratt: 'RO', pax: 1, arrivo: '2026-11-26', partenza: '2026-12-01' },   // RO 27..01
-      { struttura: 'SL', tratt: 'BB', pax: 9, arrivo: '2026-11-27', partenza: '2026-12-05' },   // San Liborio: fuori
-      { struttura: 'PR', tratt: 'BB', pax: 9, arrivo: '2026-11-27', partenza: '2026-12-05' },   // Principe: fuori
-      { struttura: 'SA', tratt: 'BB', pax: 4, arrivo: '2026-12-09', partenza: '2026-12-12' },   // 10/12 sì, 11 no
-    ];
-    const r = _bkfSheetDaPren(P, '2026-11-26', '2026-12-20');
-    ok('breakfast sheet: dal 28/11 al 10/12', r[0].d + ' … ' + r[r.length - 1].d, 'Sab 28/11 … Gio 10/12');
-    ok('breakfast sheet: 13 giorni', r.length, 13);
-    ok('breakfast sheet: colazione il mattino dopo, solo Soul e Boutique', r[1].b, 5);
-    ok('breakfast sheet: Room Only', r[0].r + '/' + r[4].r, '1/0');
-    ok('breakfast sheet: ultimo giorno', r[12].b, 4);
-    ok('breakfast sheet: oltre il file non si manda', _bkfSheetDaPren(P, '2026-11-26', '2026-12-02').length, 5);
-    ok('breakfast sheet: parte da solo col caricamento delle Prenotazioni', /bkfSheetDaPrenotazioni\(pren,iso,per\.al,true\)/.test(String(prenHandlePdf)), true);
-  }
   ok('senza soglia: scarso se non basta per una distribuzione', _invScarso(2, 10, 0), true);
   ok('senza soglia: basta per una distribuzione', _invScarso(5, 10, 0), false);
   ok('senza soglia: con un ordine in arrivo non è scarso', _invScarso(0, 10, 6), false);
