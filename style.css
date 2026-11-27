@@ -1286,7 +1286,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .hkx-c.hkx-we{background:#f3f5f8;}
 .hkx-c.hkx-oggi{background:#fdf8ee;}
 .hkx-in{width:100%;height:33px;border:none;background:transparent;text-align:center;font-size:13.5px;font-weight:600;font-family:inherit;padding:0 1px;outline:none;color:var(--accent);cursor:default;display:block;caret-color:transparent;box-sizing:border-box;position:relative;z-index:1;}
-.hkx-due .hkx-in{font-size:10.5px;letter-spacing:-.02em;}
+/* .hkx-due: sigla doppia, stesso carattere delle altre (27/11/2026); la colonna si allarga (_hkpNLargCol). */
 .hkx-c .hkpSymImg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;}
 .hkx-tot td{background:var(--surface);border-top:2px solid var(--border);text-align:center;font-size:12px;font-weight:700;color:var(--text-muted);}
 .hkx-tot td.hkx-cam{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);}

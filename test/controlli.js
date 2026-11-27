@@ -4818,3 +4818,13 @@ ok('ricezione in ritardo: la spunta «aggiungi allo stock» non si toglie da sol
   ok('proposta: tipico − magazzino − in arrivo, per eccesso', _invProposta(6, 2, 1) + ' ' + _invProposta(6, 7, 0) + ' ' + _invProposta(null, 1, 0), '3 0 null');
   ok('lista pronta solo dal giovedì prima dell\'ordine', _invListaPronta({ fraGiorni: 9 }) + ' ' + _invListaPronta({ fraGiorni: 1 }) + ' ' + _invListaPronta({ fraGiorni: 0 }), 'false true true');
 })();
+
+// Operativa HKP: sigle doppie a grandezza piena (27/11/2026, il QM: «con doppio nome non ridurre
+// la dimensione del font»). Niente più carattere piccolo per .hkx-due: si allarga la colonna.
+sez('Operativa HKP: sigle doppie a grandezza piena, colonna allargata');
+(function () {
+  ok('senza sigle doppie la colonna resta 42 px',      _hkpNLargCol(['TI', 'RO', '', 'CA']), 42);
+  ok('una sigla doppia lunga allarga la colonna',      _hkpNLargCol(['TI', 'AM/ANT']) > 42, true);
+  ok('la piu\' larga decide',                          _hkpNLargCol(['PA/TI', 'LC/ANU']) >= _hkpNLargCol(['PA/TI']), true);
+  ok('la griglia usa la larghezza calcolata',          /(const|var) DW=_hkpNLargCol\(/.test(String(hkpNRenderGrid)), true);
+})();

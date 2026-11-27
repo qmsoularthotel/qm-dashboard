@@ -512,3 +512,12 @@ la scheda) e titolo = mese (`hkpN-sa-titolo`), a destra mese ‹ ›, Salva, Sta
   sopra la griglia usa gli stessi disegni in piccolo; «Cancella» è diventato «Svuota», discreto;
 - riga dei totali «Fatte» in fondo (solo le assegnazioni a una cameriera, come prima).
 **La stampa (`hkpNPrint`) e l'app `housekeeper.html` non sono cambiate**: usano ancora i disegni.
+
+### Sigle doppie a grandezza piena (27/11/2026)
+Il QM: *«con doppio nome non ridurre la dimensione del font»*. Tolta la regola `.hkx-due .hkx-in`
+(10,5 px): le sigle doppie (PA/TI, AM/LC, LC/ANU…) hanno lo stesso carattere delle singole (13,5 px).
+Perché ci stiano, le colonne dei giorni di `hkpNRenderGrid` non sono più fisse a 42 px:
+`_hkpNLargCol(valori)` misura (canvas, `600 13.5px`) la doppia più larga del mese e dà
+`max(42, larghezza+6)` — es. AM/LC 51 px, AM/ANT 63 px; senza doppie resta 42. Una doppia più lunga
+scritta adesso allarga la colonna al prossimo ridisegno della griglia. Guida di stile aggiornata
+(esempio AM/LC a 13 px). Controlli in `test/controlli.js`.

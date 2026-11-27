@@ -1823,7 +1823,10 @@ function hkpNRenderGrid(p,tab){
   // movimenti con frecce/Invio usano data-vi, che le righe di titolo non hanno.
   const maxCam=Math.max(...rows.map(r=>r.name.length));
   const RW=Math.max(78,maxCam*9+24);
-  const DW=42,RH=34;
+  // Colonne dei giorni: 42 px, ma più larghe se una sigla doppia (AM/LC, LC/ANU…) non ci entra a
+  // grandezza piena. Le doppie non si rimpiccioliscono più (27/11/2026, il QM: «con doppio nome non
+  // ridurre la dimensione del font»): si allarga la colonna, uguale per tutti i giorni del mese.
+  const DW=_hkpNLargCol(rows.map(row=>days.map(d=>String(hkpNGetCell(p,tab,row.ri,d)||''))).flat()),RH=34;
   const today=new Date();
   const LET=['D','L','M','M','G','V','S'];
   const gInfo=d=>{const dt=new Date(yr,mo-1,d);const w=dt.getDay();return{let:LET[w],we:w===0||w===6,oggi:today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr};};
@@ -2047,6 +2050,21 @@ function _hkpNEvidApplica(p,tab,scorri){
 function _hkpNSimbolo(code){
   const f=HKP_SYM[code];
   return f?'<img class="hkx-sym-img" src="img/'+f+'.'+HKP_SYM_EXT+'" alt="" aria-hidden="true">':'';
+}
+// Larghezza delle colonne dei giorni: 42 px, o quanto serve alla sigla doppia più larga del mese
+// al carattere pieno della casella (.hkx-in: 600 13.5px), più 6 px di respiro. La misura viene dal
+// browser (canvas); dove non c'è, una stima per eccesso di 11 px a lettera.
+function _hkpNLargCol(valori){
+  let ctx=null;
+  try{const c=document.createElement('canvas');ctx=c&&c.getContext?c.getContext('2d'):null;
+    if(ctx)ctx.font='600 13.5px '+getComputedStyle(document.body).fontFamily;}catch(e){ctx=null;}
+  let w=0;
+  (valori||[]).forEach(v=>{
+    v=String(v||'').trim().toUpperCase();if(v.indexOf('/')<0)return;
+    const m=ctx&&ctx.measureText?ctx.measureText(v).width:0;
+    w=Math.max(w,m>0?m:v.length*11);
+  });
+  return Math.max(42,Math.ceil(w)+6);
 }
 function _hkpNIcoX(){return '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';}
 function _hkpNUpdateCellDisplay(input){
