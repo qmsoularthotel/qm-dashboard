@@ -219,7 +219,11 @@ ok('Galleria: nove voci di menu',                   Object.keys(BG_SEZIONI).join
     ['_biaContaInAlbergo', '_gbContaInAlbergo'], ['_biaContaScorri', '_gbContaScorri'], ['_biaContaVerifica', '_gbContaVerifica'],
     ['_biaContaRiepilogo', '_gbContaRiepilogo'], ['_biaContaAppello', '_gbContaAppello'], ['_biaResiVoce', '_gbResiVoce'],
     ['_biaContaRegistra', '_gbContaRegistra'], ['_biaContaIncomplete', '_gbContaIncomplete'], ['biaContaSalva', 'gbContaSalva'],
-    ['biaContaElimina', 'gbContaElimina'], ['_biaContaPannello', '_gbContaPannello']]
+    ['biaContaElimina', 'gbContaElimina'], ['_biaContaPannello', '_gbContaPannello'],
+    // Riscontro fatturazioni (27/11/2026): agosto tolto, menu per mese della fattura, nota in cima,
+    // senza «Fattura − dati» — identico in Compass e nella Galleria.
+    ['_biaMesiDisponibili', '_gbMesiDisponibili'], ['_biaMeseDopo', '_gbMeseDopo'], ['_biaNotaFattura', '_gbNotaFattura'],
+    ['_biaTabellaMese', '_gbTabellaMese'], ['biaSetFattura', 'gbSetFattura'], ['biaPrintMese', 'gbPrintMese'], ['_biaNoteMese', '_gbNoteMese']]
     .filter(function (c) { return rin(eval(c[0])) !== String(eval(c[1])); }).map(function (c) { return c[1]; });
   ok('Galleria: conteggio identico a Compass',        diversi.join(','), '');
 })();
@@ -234,6 +238,10 @@ ok('Galleria: nove voci di menu',                   Object.keys(BG_SEZIONI).join
   } finally { document.getElementById = vero; _gb = prima; GB_FATTURA_IN_REVISIONE = rev; }
   ok('Galleria: il riscontro non sta piu\' nei consumi', /Riscontro fatturazioni/.test(box.innerHTML), false);
   ok('Galleria: sta in Controllo fatturazione',       /Riscontro fatturazioni/.test(fat.innerHTML), true);
+  ok('Galleria: menu per mese della fattura, nota in cima, senza «Fattura − dati»',
+     /<option value="2026-09" selected>Fattura Ottobre 2026<\/option>/.test(fat.innerHTML) &&
+     fat.innerHTML.indexOf('Fattura LANA.POLI di Ottobre 2026') < fat.innerHTML.indexOf('<table') &&
+     !/Fattura − dati/.test(fat.innerHTML), true);
   // In revisione dal 16/11/2026: pagina ferma al posto del riscontro, codice intatto.
   ok('Galleria: Controllo fatturazione in revisione',  GB_FATTURA_IN_REVISIONE, true);
   ok('Galleria: «Modulo in revisione»',                /Modulo in revisione/.test(inRev) && !/Riscontro fatturazioni/.test(inRev), true);

@@ -1873,3 +1873,12 @@ Il QM: *«fattura − dati non mi serve»*. Lo scopo è vedere se Raimondo fattu
 **porta**: resta solo **Fattura − portati**. Tolta in `_biaTabellaMese` (schermo e stampa) e in
 `biaSetFattura` (niente più `bia-fd-*`/`bia-fdt`). La copia della Galleria (`compass-ops.html`,
 «Controllo fatturazione» in revisione) ha ancora la colonna: non toccata.
+
+### Riscontro fatturazioni uguale nella Galleria (27/11/2026)
+Il QM: *«rendi uguale a tutte le strutture e per Galleria»*. In Compass il riscontro vale già per
+SoulArt e Boutique (stesse funzioni). In `compass-ops.html` riportate identiche: `_gbMesiDisponibili`
+(agosto tolto, da `_gbInizioMin`), `_gbMeseDopo`, `_gbNotaFattura` (nota in cima, `#gb-nota-fattura`),
+menu «Fattura <mese>», stampa, colonna «Fattura − dati» tolta (`gbSetFattura` senza `gb-fd-*`).
+`test/galleria.js` le confronta con Compass dopo il rinomino (lista «conteggio identico a Compass»).
+Il «Controllo fatturazione» della Galleria resta **spento** (`GB_FATTURA_IN_REVISIONE=true`): si vedrà
+così quando lo si riaccende.

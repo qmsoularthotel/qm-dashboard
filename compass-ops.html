@@ -258,12 +258,12 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-26.13';
+const QM_APP_BUILD='2026-11-27.2';
 // Il numero di versione si vede nella barra degli indirizzi nello stesso formato di Compass
 // (?v=633-20261125: numero che cresce a ogni pubblicazione, trattino, data), 25/11/2026, QM.
 // Lo fa crescere strumenti/versione.sh quando il file cambia. Senza ricaricare (replaceState):
 // l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione, con QM_APP_BUILD.
-const OPS_V='56-20261126';
+const OPS_V='58-20261127';
 try{const u=new URL(location.href);if(u.searchParams.get('v')!==OPS_V){u.searchParams.set('v',OPS_V);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
@@ -2211,11 +2211,13 @@ const GB_MESI_LUNGHI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','L
 let _gbMeseSel='';
 function _gbYm(s){const d=_gbParse(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'):'';}
 function _gbMeseNome(ym){const[a,m]=String(ym).split('-');return GB_MESI_LUNGHI[(+m||1)-1]+' '+a;}
+// Mesi del Riscontro fatturazioni: solo dal mese di inizio del conteggio (_gbInizioMin), cioè da
+// settembre 2026. Agosto tolto (27/11/2026, il QM, come in Compass): non rientra nei nuovi calcoli.
 function _gbMesiDisponibili(h){
-  const s=new Set();
+  const s=new Set(),m=_gbInizioMin(h),dal=m?_gbYm(_gbFmt(m)):'';
   _gbGiri(h).forEach(g=>{const y=_gbYm(g.data);if(y)s.add(y);});
   _gbConsumi(h).forEach(c=>{const y=_gbYm(c.data);if(y)s.add(y);});
-  return[...s].sort().reverse();
+  return[...s].filter(y=>!dal||y>=dal).sort().reverse();
 }
 function _gbMese(h,ym){
   const dati=_gbVuote(),portati=_gbVuote(),consumi=_gbVuote();
@@ -2255,19 +2257,18 @@ function _gbTabellaMese(m,stampa,h){
     :`<th style="text-align:${l?'left':'right'};padding:8px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);border-bottom:1px solid var(--border);">${t}</th>`;
   const td=(x,st)=>`<td style="text-align:right;padding:${stampa?'6px 8px':'8px'};${bordo}font-variant-numeric:tabular-nums;${st||''}">${x}</td>`;
   let t=`<table style="width:100%;border-collapse:collapse;${stampa?'font-size:10pt;':'font-size:var(--fs-xs);'}"><thead><tr>
-    ${th('Tipologia',1)}${th('Dati a Raimondo')}${th('Portati da Raimondo')}${th('In fattura')}${th('Fattura − portati')}${th('Fattura − dati')}</tr></thead><tbody>`;
+    ${th('Tipologia',1)}${th('Dati a Raimondo')}${th('Portati da Raimondo')}${th('In fattura')}${th('Fattura − portati')}</tr></thead><tbody>`;
   GB_VOCI.forEach((v,i)=>{
     const f=fq[v];const has=f!==undefined&&f!==null&&f!=='';
     const cella=stampa?(has?f:'')
       :`<input type="number" min="0" inputmode="numeric" value="${has?f:''}" onfocus="this.select()" onchange="gbSetFattura(${i},this.value)" style="width:78px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">`;
     t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}">${e(v)}<div style="font-size:${stampa?'8.5pt':'var(--fs-xxs)'};color:${stampa?'#555':'var(--text-dim)'};">${e((GB_FATTURA[v]||{}).nome||'')}</div></td>
       ${td(m.dati[v])}${td(m.portati[v])}${td(cella)}
-      ${td(`<span id="gb-fp-${i}">${_gbDiffFatt(f,m.portati[v])}</span>`,stampa?'':`font-weight:700;color:${_gbColFatt(f,m.portati[v])};`)}
-      ${td(`<span id="gb-fd-${i}">${_gbDiffFatt(f,m.dati[v])}</span>`,stampa?'':`color:${_gbColFatt(f,m.dati[v])};`)}</tr>`;
+      ${td(`<span id="gb-fp-${i}">${_gbDiffFatt(f,m.portati[v])}</span>`,stampa?'':`font-weight:700;color:${_gbColFatt(f,m.portati[v])};`)}</tr>`;
   });
   const fTot=GB_VOCI.some(v=>fq[v]!==undefined&&fq[v]!=='')?_gbTot(fq):'';
-  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}font-weight:700;">Totale pezzi</td>${td(_gbTot(m.dati),'font-weight:700;')}${td(_gbTot(m.portati),'font-weight:700;')}${td(`<span id="gb-ft">${fTot}</span>`,'font-weight:700;')}${td(`<span id="gb-fpt">${_gbDiffFatt(fTot,_gbTot(m.portati))}</span>`,'font-weight:700;')}${td(`<span id="gb-fdt">${_gbDiffFatt(fTot,_gbTot(m.dati))}</span>`,'font-weight:700;')}</tr>`;
-  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};font-weight:700;">Importo (senza IVA)</td>${td(_gbEuro(_gbImporto(m.dati)))}${td(_gbEuro(_gbImporto(m.portati)))}${td(`<span id="gb-fe">${fTot===''?'':_gbEuro(_gbImporto(fq))}</span>`,'font-weight:700;')}<td></td><td></td></tr>`;
+  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}font-weight:700;">Totale pezzi</td>${td(_gbTot(m.dati),'font-weight:700;')}${td(_gbTot(m.portati),'font-weight:700;')}${td(`<span id="gb-ft">${fTot}</span>`,'font-weight:700;')}${td(`<span id="gb-fpt">${_gbDiffFatt(fTot,_gbTot(m.portati))}</span>`,'font-weight:700;')}</tr>`;
+  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};font-weight:700;">Importo (senza IVA)</td>${td(_gbEuro(_gbImporto(m.dati)))}${td(_gbEuro(_gbImporto(m.portati)))}${td(`<span id="gb-fe">${fTot===''?'':_gbEuro(_gbImporto(fq))}</span>`,'font-weight:700;')}<td></td></tr>`;
   return t+`</tbody></table>`;
 }
 // Salva la quantita' in fattura SENZA ridisegnare: col Tab si passa alla casella dopo, e un
@@ -2284,11 +2285,23 @@ async function gbSetFattura(i,val){
   const m=_gbMese(h,ym),fq=f.q;
   const put=(id,txt,col)=>{const el=document.getElementById(id);if(el){el.textContent=txt;if(col)el.parentNode.style.color=col;}};
   put('gb-fp-'+i,_gbDiffFatt(fq[v],m.portati[v]),_gbColFatt(fq[v],m.portati[v]));
-  put('gb-fd-'+i,_gbDiffFatt(fq[v],m.dati[v]),_gbColFatt(fq[v],m.dati[v]));
   const ft=GB_VOCI.some(x=>fq[x]!==undefined&&fq[x]!=='')?_gbTot(fq):'';
-  put('gb-ft',String(ft));put('gb-fpt',_gbDiffFatt(ft,_gbTot(m.portati)));put('gb-fdt',_gbDiffFatt(ft,_gbTot(m.dati)));
+  put('gb-ft',String(ft));put('gb-fpt',_gbDiffFatt(ft,_gbTot(m.portati)));
   put('gb-fe',ft===''?'':_gbEuro(_gbImporto(fq)));
   await _gbSave();
+}
+// Come in Compass (27/11/2026, il QM): il menu va per MESE DELLA FATTURA. La fattura LANA.POLI di un
+// mese riporta i consumi del mese PRIMA; dentro tutto resta per mese delle consegne (_gbMeseSel e le
+// chiavi _gb.fatture['ar|2026-10']), cambia solo il nome. «Fattura Ottobre 2026» = consegne di settembre.
+// Colonna «Fattura − dati» tolta: il controllo è se Raimondo fattura più di quanto PORTA.
+function _gbMeseDopo(ym){
+  const[a,mm]=String(ym).split('-').map(Number);if(!a||!mm)return'';
+  return mm===12?(a+1)+'-01':a+'-'+String(mm+1).padStart(2,'0');
+}
+function _gbNotaFattura(ym){
+  const dopo=_gbMeseDopo(ym);if(!dopo)return'';
+  const fatt=_gbMeseNome(dopo),cons=_gbMeseNome(ym).toLowerCase();
+  return`Fattura LANA.POLI di ${fatt}: riporta i consumi di ${cons}. In questa scheda vedi quindi i consumi di ${cons}: le consegne a Raimondo dal primo all'ultimo giorno di ${cons.split(' ')[0]}, e in «In fattura» le quantità di quella fattura, da inserire a mano.`;
 }
 function _gbNoteMese(m){
   const n=[];
@@ -2301,13 +2314,14 @@ function gbPrintMese(){
   if(!ym){_gbAvviso('Non ci sono dati da stampare per questa struttura.');return;}
   const m=_gbMese(h,ym);
   const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Biancheria ${e(_gbMeseNome(ym))}</title>
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Biancheria fattura ${e(_gbMeseNome(_gbMeseDopo(ym)))}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}@page{size:A4;margin:16mm;}
 h1{font-size:15pt;margin-bottom:2px;}.sub{color:#444;margin-bottom:14px;}.note{margin-top:12px;font-size:9.5pt;color:#333;line-height:1.5;}</style></head><body>
-<h1>Biancheria — totali di ${e(_gbMeseNome(ym))}</h1>
+<h1>Biancheria — fattura di ${e(_gbMeseNome(_gbMeseDopo(ym)))} (consumi di ${e(_gbMeseNome(ym).toLowerCase())})</h1>
 <div class="sub">${e(GB_HOTELS[h])} · fornitore Raimondo · stampato il ${_gbFmt(new Date())}</div>
+<div class="sub">${e(_gbNotaFattura(ym))}</div>
 ${_gbTabellaMese(m,true,h)}
-<div class="note">${_gbNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: quantità della fattura LANA.POLI inserite a mano.</div>
+<div class="note">${_gbNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data.</div>
 </body></html>`;
   const w=window.open('','_blank');if(!w)return;
   w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},400);
@@ -6277,10 +6291,10 @@ function _gbRenderFattura(){
       if(!mesi.includes(_gbMeseSel))_gbMeseSel=mesi[0];
       const m=_gbMese(_gbHotel,_gbMeseSel);
       h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Riscontro fatturazioni — ${esc(GB_HOTELS[_gbHotel])}</span>
-        <select onchange="gbSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_gbMeseSel?' selected':''}>${_gbMeseNome(y)}</option>`).join('')}</select>
+        <select onchange="gbSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_gbMeseSel?' selected':''}>Fattura ${_gbMeseNome(_gbMeseDopo(y))}</option>`).join('')}</select>
         <button onclick="gbPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
-      </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_gbTabellaMese(m,false,_gbHotel)}
-        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_gbNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: le quantità della fattura LANA.POLI di quel mese, da inserire a mano. In rosso le voci fatturate più di quanto risulta.</div>
+      </div><div class="panel-body" style="padding:0;overflow-x:auto;"><div id="gb-nota-fattura" style="padding:10px 14px;font-size:var(--fs-xs);color:var(--text);line-height:1.6;border-bottom:1px solid var(--border);">${esc(_gbNotaFattura(_gbMeseSel))}</div>${_gbTabellaMese(m,false,_gbHotel)}
+        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_gbNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. In rosso le voci fatturate più di quanto risulta.</div>
       </div></div>`;
     }
   }

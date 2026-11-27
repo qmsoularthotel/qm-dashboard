@@ -17195,6 +17195,8 @@ function _biaEuro(n){return '€ '+(Math.round(n*100)/100).toFixed(2).replace('.
 function _biaImporto(q){return BIA_VOCI.reduce((s,v)=>s+(Number(q&&q[v])||0)*((BIA_FATTURA[v]||{}).prezzo||0),0);}
 function _biaDiffFatt(f,n){if(f===null||f===undefined||f==='')return'';const d=Number(f)-n;return d===0?'=':(d>0?'+'+d:String(d));}
 function _biaColFatt(f,n){if(f===null||f===undefined||f==='')return'var(--text-dim)';const d=Number(f)-n;return d>0?'var(--red)':d<0?'var(--amber)':'var(--green)';}
+// Colonna «Fattura − dati» tolta (27/11/2026, il QM: «non mi serve»): il controllo è se Raimondo
+// fattura più di quanto PORTA, cioè «Fattura − portati».
 function _biaTabellaMese(m,stampa,h){
   const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const fq=_biaFatturaDi(h||_biaHotel,m.ym)||{};
@@ -17202,8 +17204,6 @@ function _biaTabellaMese(m,stampa,h){
   const th=(t,l)=>stampa?`<th style="text-align:${l?'left':'right'};padding:6px 8px;border-bottom:1.5px solid #111;">${t}</th>`
     :`<th style="text-align:${l?'left':'right'};padding:8px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);border-bottom:1px solid var(--border);">${t}</th>`;
   const td=(x,st)=>`<td style="text-align:right;padding:${stampa?'6px 8px':'8px'};${bordo}font-variant-numeric:tabular-nums;${st||''}">${x}</td>`;
-  // Colonna «Fattura − dati» tolta (27/11/2026, il QM: «non mi serve»): il controllo è se Raimondo
-  // fattura più di quanto PORTA, cioè «Fattura − portati».
   let t=`<table style="width:100%;border-collapse:collapse;${stampa?'font-size:10pt;':'font-size:var(--fs-xs);'}"><thead><tr>
     ${th('Tipologia',1)}${th('Dati a Raimondo')}${th('Portati da Raimondo')}${th('In fattura')}${th('Fattura − portati')}</tr></thead><tbody>`;
   BIA_VOCI.forEach((v,i)=>{
