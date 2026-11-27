@@ -2954,6 +2954,8 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   // 27/11/2026: la nota sta in cima, sotto il titolo «Riscontro fatturazioni», prima della tabella.
   ok('nota fattura: sotto il titolo, prima della tabella', (function(h){var r=h.indexOf('Riscontro fatturazioni'),n=h.indexOf('Fattura LANA.POLI di Ottobre 2026');return r>=0&&n>r&&n<h.indexOf('<table',r);})(box.innerHTML), true);
   ok('nota fattura: non ripetuta in fondo', _biaNoteMese(m).join(' ').indexOf('Fattura LANA.POLI')<0, true);
+  ok('colonna «Fattura − dati» tolta, resta «Fattura − portati»', /Fattura − dati/.test(_biaTabellaMese(m,false,'sa')+_biaTabellaMese(m,true,'sa'))+' '+/Fattura − portati/.test(_biaTabellaMese(m,false,'sa')), 'false true');
+  ok('nessun aggiornamento per la colonna tolta', /bia-fd/.test(String(biaSetFattura)+_biaTabellaMese(m,false,'sa')), false);
   ok('niente piu\' colonna consumi',              /Consumi fogli camera/.test(_biaTabellaMese(m,false,'sa')),false);
   _bia=prima;_biaHotel=ph;_biaMeseSel=pm;
 })();

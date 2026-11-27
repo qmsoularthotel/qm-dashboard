@@ -1867,3 +1867,9 @@ stampa dicono «Fattura LANA.POLI di Ottobre 2026: riporta i consumi di settembr
 La nota sta **in cima al riquadro**, subito sotto il titolo «Riscontro fatturazioni» e prima della
 tabella (`#bia-nota-fattura`; nella stampa sotto l'intestazione), non più in fondo con le altre note
 (27/11/2026, il QM: «sposta sotto riscontro fatturazioni»).
+
+### Riscontro fatturazioni: tolta la colonna «Fattura − dati» (27/11/2026)
+Il QM: *«fattura − dati non mi serve»*. Lo scopo è vedere se Raimondo fattura più di quanto
+**porta**: resta solo **Fattura − portati**. Tolta in `_biaTabellaMese` (schermo e stampa) e in
+`biaSetFattura` (niente più `bia-fd-*`/`bia-fdt`). La copia della Galleria (`compass-ops.html`,
+«Controllo fatturazione» in revisione) ha ancora la colonna: non toccata.

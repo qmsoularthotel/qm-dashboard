@@ -17202,20 +17202,21 @@ function _biaTabellaMese(m,stampa,h){
   const th=(t,l)=>stampa?`<th style="text-align:${l?'left':'right'};padding:6px 8px;border-bottom:1.5px solid #111;">${t}</th>`
     :`<th style="text-align:${l?'left':'right'};padding:8px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);border-bottom:1px solid var(--border);">${t}</th>`;
   const td=(x,st)=>`<td style="text-align:right;padding:${stampa?'6px 8px':'8px'};${bordo}font-variant-numeric:tabular-nums;${st||''}">${x}</td>`;
+  // Colonna «Fattura − dati» tolta (27/11/2026, il QM: «non mi serve»): il controllo è se Raimondo
+  // fattura più di quanto PORTA, cioè «Fattura − portati».
   let t=`<table style="width:100%;border-collapse:collapse;${stampa?'font-size:10pt;':'font-size:var(--fs-xs);'}"><thead><tr>
-    ${th('Tipologia',1)}${th('Dati a Raimondo')}${th('Portati da Raimondo')}${th('In fattura')}${th('Fattura − portati')}${th('Fattura − dati')}</tr></thead><tbody>`;
+    ${th('Tipologia',1)}${th('Dati a Raimondo')}${th('Portati da Raimondo')}${th('In fattura')}${th('Fattura − portati')}</tr></thead><tbody>`;
   BIA_VOCI.forEach((v,i)=>{
     const f=fq[v];const has=f!==undefined&&f!==null&&f!=='';
     const cella=stampa?(has?f:'')
       :`<input type="number" min="0" inputmode="numeric" value="${has?f:''}" onfocus="this.select()" onchange="biaSetFattura(${i},this.value)" style="width:78px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">`;
     t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}">${e(v)}<div style="font-size:${stampa?'8.5pt':'var(--fs-xxs)'};color:${stampa?'#555':'var(--text-dim)'};">${e((BIA_FATTURA[v]||{}).nome||'')}</div></td>
       ${td(m.dati[v])}${td(m.portati[v])}${td(cella)}
-      ${td(`<span id="bia-fp-${i}">${_biaDiffFatt(f,m.portati[v])}</span>`,stampa?'':`font-weight:700;color:${_biaColFatt(f,m.portati[v])};`)}
-      ${td(`<span id="bia-fd-${i}">${_biaDiffFatt(f,m.dati[v])}</span>`,stampa?'':`color:${_biaColFatt(f,m.dati[v])};`)}</tr>`;
+      ${td(`<span id="bia-fp-${i}">${_biaDiffFatt(f,m.portati[v])}</span>`,stampa?'':`font-weight:700;color:${_biaColFatt(f,m.portati[v])};`)}</tr>`;
   });
   const fTot=BIA_VOCI.some(v=>fq[v]!==undefined&&fq[v]!=='')?_biaTot(fq):'';
-  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}font-weight:700;">Totale pezzi</td>${td(_biaTot(m.dati),'font-weight:700;')}${td(_biaTot(m.portati),'font-weight:700;')}${td(`<span id="bia-ft">${fTot}</span>`,'font-weight:700;')}${td(`<span id="bia-fpt">${_biaDiffFatt(fTot,_biaTot(m.portati))}</span>`,'font-weight:700;')}${td(`<span id="bia-fdt">${_biaDiffFatt(fTot,_biaTot(m.dati))}</span>`,'font-weight:700;')}</tr>`;
-  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};font-weight:700;">Importo (senza IVA)</td>${td(_biaEuro(_biaImporto(m.dati)))}${td(_biaEuro(_biaImporto(m.portati)))}${td(`<span id="bia-fe">${fTot===''?'':_biaEuro(_biaImporto(fq))}</span>`,'font-weight:700;')}<td></td><td></td></tr>`;
+  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}font-weight:700;">Totale pezzi</td>${td(_biaTot(m.dati),'font-weight:700;')}${td(_biaTot(m.portati),'font-weight:700;')}${td(`<span id="bia-ft">${fTot}</span>`,'font-weight:700;')}${td(`<span id="bia-fpt">${_biaDiffFatt(fTot,_biaTot(m.portati))}</span>`,'font-weight:700;')}</tr>`;
+  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};font-weight:700;">Importo (senza IVA)</td>${td(_biaEuro(_biaImporto(m.dati)))}${td(_biaEuro(_biaImporto(m.portati)))}${td(`<span id="bia-fe">${fTot===''?'':_biaEuro(_biaImporto(fq))}</span>`,'font-weight:700;')}<td></td></tr>`;
   return t+`</tbody></table>`;
 }
 // Salva la quantita' in fattura SENZA ridisegnare: col Tab si passa alla casella dopo, e un
@@ -17232,9 +17233,8 @@ async function biaSetFattura(i,val){
   const m=_biaMese(h,ym),fq=f.q;
   const put=(id,txt,col)=>{const el=document.getElementById(id);if(el){el.textContent=txt;if(col)el.parentNode.style.color=col;}};
   put('bia-fp-'+i,_biaDiffFatt(fq[v],m.portati[v]),_biaColFatt(fq[v],m.portati[v]));
-  put('bia-fd-'+i,_biaDiffFatt(fq[v],m.dati[v]),_biaColFatt(fq[v],m.dati[v]));
   const ft=BIA_VOCI.some(x=>fq[x]!==undefined&&fq[x]!=='')?_biaTot(fq):'';
-  put('bia-ft',String(ft));put('bia-fpt',_biaDiffFatt(ft,_biaTot(m.portati)));put('bia-fdt',_biaDiffFatt(ft,_biaTot(m.dati)));
+  put('bia-ft',String(ft));put('bia-fpt',_biaDiffFatt(ft,_biaTot(m.portati)));
   put('bia-fe',ft===''?'':_biaEuro(_biaImporto(fq)));
   await _biaSave();
 }
