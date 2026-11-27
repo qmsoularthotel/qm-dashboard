@@ -17238,8 +17238,18 @@ async function biaSetFattura(i,val){
   put('bia-fe',ft===''?'':_biaEuro(_biaImporto(fq)));
   await _biaSave();
 }
+// La fattura LANA.POLI arriva a inizio del mese DOPO e riguarda il mese scelto (27/11/2026, il QM:
+// la fattura n. 912 del 03/11/2026 dice «avvenuto nel mese di 10/2026»). Lo si scrive sotto il
+// riscontro, con i mesi giusti, perché la data della fattura non porti a metterla nel mese sbagliato.
+function _biaNotaFattura(ym){
+  const[a,mm]=String(ym).split('-').map(Number);if(!a||!mm)return'';
+  const dopo=mm===12?(a+1)+'-01':a+'-'+String(mm+1).padStart(2,'0');
+  const nome=_biaMeseNome(ym).toLowerCase(),nomeDopo=_biaMeseNome(dopo).toLowerCase();
+  return`La fattura di un mese riguarda i consumi del mese precedente: quella emessa a inizio ${nomeDopo} riguarda ${nome} e va inserita qui (es. la fattura del 03/11/2026 riguarda ottobre 2026).`;
+}
 function _biaNoteMese(m){
   const n=[];
+  const nf=_biaNotaFattura(m.ym);if(nf)n.push(nf);
   n.push(m.giri.length?`${m.giri.length} consegne nel mese: ${m.giri.map(d=>d.slice(0,5)).join(', ')}.`:'Nessuna consegna registrata nel mese.');
   if(m.nonReg.length)n.push(`Senza il dato di cosa ha riportato: ${m.nonReg.map(d=>d.slice(0,5)).join(', ')} — «Portati» non le comprende.`);
   return n;

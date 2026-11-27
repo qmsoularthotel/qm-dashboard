@@ -2946,6 +2946,11 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   ok('casella vuota: nessuna differenza',          _biaDiffFatt('',3),'');
   ok('importo: 20 federe a 0,32',                 _biaEuro(_biaImporto(_biaFatturaDi('sa','2026-09'))),'€ 6,40');
   ok('la fattura del SoulArt non vale per il Boutique', _biaFatturaDi('bh','2026-09'),null);
+  // 27/11/2026: la fattura del 03/11 riguarda ottobre — detto sotto il riscontro, schermo e stampa.
+  ok('nota fattura: ottobre si paga con la fattura di inizio novembre', _biaNotaFattura('2026-10'),
+     'La fattura di un mese riguarda i consumi del mese precedente: quella emessa a inizio novembre 2026 riguarda ottobre 2026 e va inserita qui (es. la fattura del 03/11/2026 riguarda ottobre 2026).');
+  ok('nota fattura: dicembre passa all\'anno dopo', /inizio gennaio 2027 riguarda dicembre 2026/.test(_biaNotaFattura('2026-12')), true);
+  ok('nota fattura: sta nelle note del mese', _biaNoteMese(m)[0], _biaNotaFattura('2026-09'));
   ok('niente piu\' colonna consumi',              /Consumi fogli camera/.test(_biaTabellaMese(m,false,'sa')),false);
   _bia=prima;_biaHotel=ph;_biaMeseSel=pm;
 })();
