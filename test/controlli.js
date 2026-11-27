@@ -322,10 +322,15 @@ sez('Biancheria: distinta solo con i consumi salvati');
     biaPrintDistinta();
     ok('bia: giorno senza consumi, distinta bloccata', avvisi[0], 'Mancano dei consumi');
     giro(gg, _biaToIso(dataG));
-    campi['bia-cons-data'] = { value: _biaToIso(gg[0]) };
+    campi['bia-cons-data'] = { value: _biaToIso(gg[0]), dataset: { h: 'sa' } };
     campi['bia-c-' + BIA_VOCI.indexOf('Federa')] = { value: '9' };
     biaPrintDistinta();
     ok('bia: numeri scritti e non salvati, distinta bloccata', avvisi[0], 'Consumi non salvati');
+    // 27/11/2026: cambiando struttura, a schermo restano un attimo le caselle di quella lasciata.
+    // Non sono di questa struttura: non devono far dire «Consumi non salvati».
+    campi['bia-cons-data'].dataset.h = 'bh'; avvisi = [];
+    ok('bia: caselle di un\'altra struttura, nessun «non salvati»', _biaConsumiDaSalvare('sa', per).nonSalvato, null);
+    ok('bia: il campo data dice di che struttura e\'', /id="bia-cons-data" data-h="\$\{_biaHotel\}"/.test(String(biaRender)), true);
     giro(gg, _biaToIso(dataG));
     ok('bia: tutto salvato, niente da salvare', JSON.stringify(_biaConsumiDaSalvare('sa', per)), '{"mancanti":[],"nonSalvato":null}');
   } finally { document.getElementById = veroEl; cqAvviso = veroAv; }

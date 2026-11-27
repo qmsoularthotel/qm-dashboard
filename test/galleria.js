@@ -322,10 +322,15 @@ sez('Gestione Biancheria (Galleria): distinta solo con i consumi salvati');
     gbPrintDistinta();
     ok('gb: giorno senza consumi, distinta bloccata', avvisi[0], 'Mancano dei consumi');
     giro(gg, _gbToIso(dataG));
-    campi['gb-cons-data'] = { value: _gbToIso(gg[0]) };
+    campi['gb-cons-data'] = { value: _gbToIso(gg[0]), dataset: { h: 'ar' } };
     campi['gb-c-' + GB_VOCI.indexOf('Federa')] = { value: '9' };
     gbPrintDistinta();
     ok('gb: numeri scritti e non salvati, distinta bloccata', avvisi[0], 'Consumi non salvati');
+    // 27/11/2026: cambiando struttura, a schermo restano un attimo le caselle di quella lasciata.
+    // Non sono di questa struttura: non devono far dire «Consumi non salvati».
+    campi['gb-cons-data'].dataset.h = 'sb'; avvisi = [];
+    ok('gb: caselle di un\'altra struttura, nessun «non salvati»', _gbConsumiDaSalvare('ar', per).nonSalvato, null);
+    ok('gb: il campo data dice di che struttura e\'', /id="gb-cons-data" data-h="\$\{_gbHotel\}"/.test(String(_gbRenderCore)), true);
     giro(gg, _gbToIso(dataG));
     ok('gb: tutto salvato, niente da salvare', JSON.stringify(_gbConsumiDaSalvare('ar', per)), '{"mancanti":[],"nonSalvato":null}');
   } finally { document.getElementById = veroEl; _gbAvviso = veroAv; }

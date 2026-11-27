@@ -16749,7 +16749,7 @@ function biaRender(){
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
-        ${_biaFreccia('consumi',-1)}<input type="date" id="bia-cons-data" value="${consIso}" max="${_biaToIso(_biaFmt(oggi))}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_biaFreccia('consumi',1,consIso>=_biaToIso(_biaFmt(oggi)))}
+        ${_biaFreccia('consumi',-1)}<input type="date" id="bia-cons-data" data-h="${_biaHotel}" value="${consIso}" max="${_biaToIso(_biaFmt(oggi))}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_biaFreccia('consumi',1,consIso>=_biaToIso(_biaFmt(oggi)))}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
         ${BIA_VOCI.map((v,i)=>`<div>
@@ -17285,8 +17285,12 @@ function _biaConsumiDaSalvare(hotel,per){
   const out={mancanti:[],nonSalvato:null};
   if(!per||per.vuoto)return out;
   out.mancanti=_biaGiorniSenzaConsumi(hotel,per);
-  const data=_biaFromIso((document.getElementById('bia-cons-data')||{}).value||'');
-  if(data&&hotel===_biaHotel){
+  // Le caselle a schermo devono essere di QUESTA struttura (data-h): cambiando struttura la pagina
+  // si ridisegna, e mentre si prepara il nuovo HTML a schermo ci sono ancora le caselle di quella
+  // lasciata. Confrontate coi consumi salvati dell'altra, risultavano «non salvati» (27/11/2026).
+  const campo=document.getElementById('bia-cons-data');
+  const data=_biaFromIso((campo||{}).value||'');
+  if(data&&hotel===_biaHotel&&campo&&campo.dataset&&campo.dataset.h===hotel){
     const d=_biaParse(data);
     if(d&&d>=per.dal&&d<=per.al){
       const salvato=_bia.consumi.find(c=>_biaH(c)===hotel&&c.data===data);

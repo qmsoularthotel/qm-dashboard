@@ -258,12 +258,12 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-27.2';
+const QM_APP_BUILD='2026-11-27.3';
 // Il numero di versione si vede nella barra degli indirizzi nello stesso formato di Compass
 // (?v=633-20261125: numero che cresce a ogni pubblicazione, trattino, data), 25/11/2026, QM.
 // Lo fa crescere strumenti/versione.sh quando il file cambia. Senza ricaricare (replaceState):
 // l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione, con QM_APP_BUILD.
-const OPS_V='58-20261127';
+const OPS_V='59-20261127';
 try{const u=new URL(location.href);if(u.searchParams.get('v')!==OPS_V){u.searchParams.set('v',OPS_V);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
@@ -1880,7 +1880,7 @@ function _gbRenderCore(){
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
-        ${_gbFreccia('consumi',-1)}<input type="date" id="gb-cons-data" value="${consIso}" max="${_gbToIso(_gbFmt(oggi))}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_gbFreccia('consumi',1,consIso>=_gbToIso(_gbFmt(oggi)))}
+        ${_gbFreccia('consumi',-1)}<input type="date" id="gb-cons-data" data-h="${_gbHotel}" value="${consIso}" max="${_gbToIso(_gbFmt(oggi))}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_gbFreccia('consumi',1,consIso>=_gbToIso(_gbFmt(oggi)))}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
         ${GB_VOCI.map((v,i)=>`<div>
@@ -2336,8 +2336,12 @@ function _gbConsumiDaSalvare(hotel,per){
   const out={mancanti:[],nonSalvato:null};
   if(!per||per.vuoto)return out;
   out.mancanti=_gbGiorniSenzaConsumi(hotel,per);
-  const data=_gbFromIso((document.getElementById('gb-cons-data')||{}).value||'');
-  if(data&&hotel===_gbHotel){
+  // Le caselle a schermo devono essere di QUESTA struttura (data-h): cambiando struttura la pagina
+  // si ridisegna, e mentre si prepara il nuovo HTML a schermo ci sono ancora le caselle di quella
+  // lasciata. Confrontate coi consumi salvati dell'altra, risultavano «non salvati» (27/11/2026).
+  const campo=document.getElementById('gb-cons-data');
+  const data=_gbFromIso((campo||{}).value||'');
+  if(data&&hotel===_gbHotel&&campo&&campo.dataset&&campo.dataset.h===hotel){
     const d=_gbParse(data);
     if(d&&d>=per.dal&&d<=per.al){
       const salvato=_gb.consumi.find(c=>_gbH(c)===hotel&&c.data===data);

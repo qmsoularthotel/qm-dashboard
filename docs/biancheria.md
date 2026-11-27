@@ -1882,3 +1882,12 @@ menu «Fattura <mese>», stampa, colonna «Fattura − dati» tolta (`gbSetFattu
 `test/galleria.js` le confronta con Compass dopo il rinomino (lista «conteggio identico a Compass»).
 Il «Controllo fatturazione» della Galleria resta **spento** (`GB_FATTURA_IN_REVISIONE=true`): si vedrà
 così quando lo si riaccende.
+
+### «Consumi non salvati» falso cambiando struttura (27/11/2026)
+Il QM: consumi salvati, ma passando da SoulArt a Boutique (e viceversa) la distinta diceva «Consumi
+non salvati: venerdì 27 novembre». Causa: `biaRender` prepara il nuovo HTML (e chiama
+`_biaPannelloDistinta` → `_biaConsumiDaSalvare`) mentre a schermo ci sono ancora le caselle della
+struttura lasciata; confrontate coi consumi salvati della nuova risultavano diverse. Ora il campo
+`#bia-cons-data` porta `data-h` (la struttura delle caselle) e il confronto si fa solo se coincide.
+Identico in Compass OPS (`#gb-cons-data`, `_gbConsumiDaSalvare`). Controlli in `controlli.js` e
+`galleria.js`, provati togliendo la condizione.
