@@ -2915,7 +2915,8 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
     {id:'g1',hotel:'sa',data:'29/08/2026',consegnato:Q({Federa:10}),ricevuto:Q({Federa:9})},
     {id:'g2',hotel:'sa',data:'01/09/2026',consegnato:Q({Federa:5}),ricevuto:Q({Federa:10})},
     {id:'g3',hotel:'sa',data:'03/09/2026',consegnato:Q({Federa:7,'Telo doccia':3}),ricevuto:_biaVuote()},
-    {id:'g4',hotel:'bh',data:'03/09/2026',consegnato:Q({Federa:50}),ricevuto:Q({Federa:40})}]};
+    {id:'g4',hotel:'bh',data:'03/09/2026',consegnato:Q({Federa:50}),ricevuto:Q({Federa:40})},
+    {id:'g5',hotel:'bh',data:'29/08/2026',consegnato:Q({Federa:30}),ricevuto:Q({Federa:30})}]};
   var m=_biaMese('sa','2026-09');
   ok('settembre: dati a Raimondo, per tipologia',   m.dati.Federa+'/'+m.dati['Telo doccia'],'12/3');
   ok('portati: solo le consegne registrate',        m.portati.Federa,10);
@@ -2924,6 +2925,12 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   ok('agosto resta separato',                       _biaMese('sa','2026-08').dati.Federa,10);
   ok('il Boutique non entra nel SoulArt',           _biaMese('bh','2026-09').dati.Federa,50);
   ok('mesi disponibili, dal piu\' recente',         _biaMesiDisponibili('sa').join(','),'2026-09,2026-08');
+  // 27/11/2026: col limite vero (dal 05/09) agosto non compare piu' nel Riscontro fatturazioni.
+  var _sp=BIA_INIZIO_MINIMO,_spH=BIA_INIZIO_MINIMO_H;BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;
+  try{
+    ok('riscontro: agosto tolto per il SoulArt',     _biaMesiDisponibili('sa').join(','),'2026-09');
+    ok('riscontro: agosto tolto per il Boutique',    _biaMesiDisponibili('bh').join(','),'2026-09');
+  }finally{BIA_INIZIO_MINIMO=_sp;BIA_INIZIO_MINIMO_H=_spH;}
   var box={innerHTML:''},vero=document.getElementById;
   var boxC={innerHTML:''};
   document.getElementById=function(id){return id==='bia-content'?box:id==='biac-content'?boxC:null;};

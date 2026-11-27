@@ -17156,11 +17156,14 @@ const BIA_MESI_LUNGHI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','
 let _biaMeseSel='';
 function _biaYm(s){const d=_biaParse(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'):'';}
 function _biaMeseNome(ym){const[a,m]=String(ym).split('-');return BIA_MESI_LUNGHI[(+m||1)-1]+' '+a;}
+// Mesi del Riscontro fatturazioni: solo dal mese di inizio del conteggio (_biaInizioMin), cioè da
+// settembre 2026 per SoulArt e Boutique. Agosto tolto (27/11/2026, il QM): «non rientra nei calcoli
+// aggiornati con i nuovi metodi» — le consegne di agosto restano nello storico, non qui.
 function _biaMesiDisponibili(h){
-  const s=new Set();
+  const s=new Set(),m=_biaInizioMin(h),dal=m?_biaYm(_biaFmt(m)):'';
   _biaGiri(h).forEach(g=>{const y=_biaYm(g.data);if(y)s.add(y);});
   _biaConsumi(h).forEach(c=>{const y=_biaYm(c.data);if(y)s.add(y);});
-  return[...s].sort().reverse();
+  return[...s].filter(y=>!dal||y>=dal).sort().reverse();
 }
 function _biaMese(h,ym){
   const dati=_biaVuote(),portati=_biaVuote(),consumi=_biaVuote();

@@ -1837,3 +1837,11 @@ ogni postazione; `_biaDotVisibile`, `biaDotApri`, `_biaDotLucchetto` non esiston
 il lucchetto **«Modifica»** (`_biaDotSblocco`) contro le cifre battute per sbaglio. Non rimettere
 PIN o interruttori per dispositivo su questa voce.
 
+
+### Riscontro fatturazioni: agosto tolto (27/11/2026)
+Richiesta del QM: *"togli agosto perché non rientra nei calcoli aggiornati con i nuovi metodi"*.
+`_biaMesiDisponibili(h)` elenca ora solo i mesi dal mese di `_biaInizioMin(h)` in poi (SoulArt e
+Boutique: dal 05/09/2026, quindi da settembre 2026). Agosto sparisce dal menu del Riscontro e dalla
+stampa; le consegne di agosto restano nei dati e nello storico, non vengono cancellate. Controlli in
+`test/controlli.js` ("riscontro: agosto tolto per il SoulArt / per il Boutique"), provati rompendo
+il filtro.
