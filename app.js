@@ -17018,7 +17018,7 @@ function biaRenderConteggio(){
         <select onchange="biaSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_biaMeseSel?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
         <button onclick="biaPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
       </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_biaTabellaMese(m,false,_biaHotel)}
-        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_biaNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: le quantità della fattura LANA.POLI di quel mese, da inserire a mano. In rosso le voci fatturate più di quanto risulta.</div>
+        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_biaNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. In rosso le voci fatturate più di quanto risulta.</div>
       </div></div>`;
     }
   }
@@ -17239,13 +17239,12 @@ async function biaSetFattura(i,val){
   await _biaSave();
 }
 // La fattura LANA.POLI arriva a inizio del mese DOPO e riguarda il mese scelto (27/11/2026, il QM:
-// la fattura n. 912 del 03/11/2026 dice «avvenuto nel mese di 10/2026»). Lo si scrive sotto il
-// riscontro, con i mesi giusti, perché la data della fattura non porti a metterla nel mese sbagliato.
+// la fattura n. 912 del 03/11/2026 dice «avvenuto nel mese di 10/2026»). La nota nomina SOLO il mese
+// scelto: con «novembre» scritto sotto ottobre chi legge non capiva (27/11/2026, il QM).
 function _biaNotaFattura(ym){
   const[a,mm]=String(ym).split('-').map(Number);if(!a||!mm)return'';
-  const dopo=mm===12?(a+1)+'-01':a+'-'+String(mm+1).padStart(2,'0');
-  const nome=_biaMeseNome(ym).toLowerCase(),nomeDopo=_biaMeseNome(dopo).toLowerCase();
-  return`La fattura di un mese riguarda i consumi del mese precedente: quella emessa a inizio ${nomeDopo} riguarda ${nome} e va inserita qui (es. la fattura del 03/11/2026 riguarda ottobre 2026).`;
+  const nome=_biaMeseNome(ym).toLowerCase();
+  return`«In fattura»: le quantità della fattura LANA.POLI di ${nome}, da inserire a mano. La fattura arriva a inizio del mese successivo, ma riguarda le consegne di ${nome}.`;
 }
 function _biaNoteMese(m){
   const n=[];
@@ -17265,7 +17264,7 @@ h1{font-size:15pt;margin-bottom:2px;}.sub{color:#444;margin-bottom:14px;}.note{m
 <h1>Biancheria — totali di ${e(_biaMeseNome(ym))}</h1>
 <div class="sub">${e(BIA_HOTELS[h])} · fornitore Raimondo · stampato il ${_biaFmt(new Date())}</div>
 ${_biaTabellaMese(m,true,h)}
-<div class="note">${_biaNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: quantità della fattura LANA.POLI inserite a mano.</div>
+<div class="note">${_biaNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data.</div>
 </body></html>`;
   const w=window.open('','_blank');if(!w)return;
   w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},400);

@@ -1849,7 +1849,10 @@ il filtro.
 ### Riscontro fatturazioni: quale fattura va in quale mese (27/11/2026)
 Richiesta del QM: la fattura LANA.POLI arriva a inizio del mese dopo e riguarda il mese prima
 (n. 912 del 03/11/2026: *«avvenuto nel mese di 10/2026»*). `_biaNotaFattura(ym)` scrive sotto il
-riscontro, e nella stampa (prima riga di `_biaNoteMese`), quale fattura va inserita nel mese scelto,
-con il passaggio d'anno per dicembre. Scopo del riscontro (il QM): vedere se Raimondo fattura più di
+riscontro, e nella stampa (prima riga di `_biaNoteMese`): *«In fattura»: le quantità della fattura
+LANA.POLI di ottobre 2026, da inserire a mano. La fattura arriva a inizio del mese successivo, ma
+riguarda le consegne di ottobre 2026.* Nomina **solo il mese scelto**: una prima versione citava
+«novembre» sotto ottobre e chi legge (non il QM) non capiva. La vecchia frase fissa «In fattura: …
+di quel mese» è stata tolta perché ora la dice la nota. Scopo del riscontro (il QM): vedere se Raimondo fattura più di
 quanto porta — le bolle sono esatte, il confronto giusto è *Fattura − portati*. Ottobre 2026 SoulArt:
 +243 pezzi, € 99,44 senza IVA.
