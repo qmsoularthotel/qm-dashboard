@@ -2947,9 +2947,10 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   ok('importo: 20 federe a 0,32',                 _biaEuro(_biaImporto(_biaFatturaDi('sa','2026-09'))),'€ 6,40');
   ok('la fattura del SoulArt non vale per il Boutique', _biaFatturaDi('bh','2026-09'),null);
   // 27/11/2026: la fattura del 03/11 riguarda ottobre — detto sotto il riscontro, schermo e stampa.
-  ok('nota fattura: ottobre dice ottobre', _biaNotaFattura('2026-10'),
-     '«In fattura»: le quantità della fattura LANA.POLI di ottobre 2026, da inserire a mano. La fattura arriva a inizio del mese successivo, ma riguarda le consegne di ottobre 2026.');
-  ok('nota fattura: non nomina il mese dopo (confondeva)', /novembre|gennaio/.test(_biaNotaFattura('2026-10')+_biaNotaFattura('2026-12')), false);
+  // 27/11/2026: il menu va per mese della fattura; «Fattura Ottobre 2026» mostra le consegne di settembre.
+  ok('fattura: il mese dopo, anche a dicembre', _biaMeseDopo('2026-09')+' '+_biaMeseDopo('2026-12'), '2026-10 2027-01');
+  ok('nota fattura: la fattura di ottobre riporta i consumi di settembre', /^Fattura LANA\.POLI di Ottobre 2026: riporta i consumi di settembre 2026\. In questa scheda vedi quindi i consumi di settembre 2026/.test(_biaNotaFattura('2026-09')), true);
+  ok('menu: la voce si chiama come la fattura', /<option value="2026-09" selected>Fattura Ottobre 2026<\/option>/.test(box.innerHTML), true);
   ok('nota fattura: sta nelle note del mese', _biaNoteMese(m)[0], _biaNotaFattura('2026-09'));
   ok('niente piu\' colonna consumi',              /Consumi fogli camera/.test(_biaTabellaMese(m,false,'sa')),false);
   _bia=prima;_biaHotel=ph;_biaMeseSel=pm;

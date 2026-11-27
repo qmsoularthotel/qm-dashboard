@@ -17015,7 +17015,7 @@ function biaRenderConteggio(){
       if(!mesi.includes(_biaMeseSel))_biaMeseSel=mesi[0];
       const m=_biaMese(_biaHotel,_biaMeseSel);
       h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Riscontro fatturazioni — ${esc(BIA_HOTELS[_biaHotel])}</span>
-        <select onchange="biaSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_biaMeseSel?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
+        <select onchange="biaSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_biaMeseSel?' selected':''}>Fattura ${_biaMeseNome(_biaMeseDopo(y))}</option>`).join('')}</select>
         <button onclick="biaPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
       </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_biaTabellaMese(m,false,_biaHotel)}
         <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_biaNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. In rosso le voci fatturate più di quanto risulta.</div>
@@ -17238,13 +17238,19 @@ async function biaSetFattura(i,val){
   put('bia-fe',ft===''?'':_biaEuro(_biaImporto(fq)));
   await _biaSave();
 }
-// La fattura LANA.POLI arriva a inizio del mese DOPO e riguarda il mese scelto (27/11/2026, il QM:
-// la fattura n. 912 del 03/11/2026 dice «avvenuto nel mese di 10/2026»). La nota nomina SOLO il mese
-// scelto: con «novembre» scritto sotto ottobre chi legge non capiva (27/11/2026, il QM).
-function _biaNotaFattura(ym){
+// Il menu del Riscontro va per MESE DELLA FATTURA (27/11/2026, il QM: «deve essere chiaro che in questa
+// scheda i consumi che vedo sono quelli di settembre»). La fattura LANA.POLI di un mese riporta i
+// consumi del mese PRIMA (n. 912 del 03/11/2026: «avvenuto nel mese di 10/2026»). Dentro, tutto resta
+// per mese delle consegne: _biaMeseSel e le chiavi _bia.fatture['sa|2026-10'] sono il mese dei
+// consumi; cambia solo come si chiama la voce. «Fattura Ottobre 2026» = consegne di settembre.
+function _biaMeseDopo(ym){
   const[a,mm]=String(ym).split('-').map(Number);if(!a||!mm)return'';
-  const nome=_biaMeseNome(ym).toLowerCase();
-  return`«In fattura»: le quantità della fattura LANA.POLI di ${nome}, da inserire a mano. La fattura arriva a inizio del mese successivo, ma riguarda le consegne di ${nome}.`;
+  return mm===12?(a+1)+'-01':a+'-'+String(mm+1).padStart(2,'0');
+}
+function _biaNotaFattura(ym){
+  const dopo=_biaMeseDopo(ym);if(!dopo)return'';
+  const fatt=_biaMeseNome(dopo),cons=_biaMeseNome(ym).toLowerCase();
+  return`Fattura LANA.POLI di ${fatt}: riporta i consumi di ${cons}. In questa scheda vedi quindi i consumi di ${cons}: le consegne a Raimondo dal primo all'ultimo giorno di ${cons.split(' ')[0]}, e in «In fattura» le quantità di quella fattura, da inserire a mano.`;
 }
 function _biaNoteMese(m){
   const n=[];
@@ -17258,10 +17264,10 @@ function biaPrintMese(){
   if(!ym){cqAvviso('Non ci sono dati da stampare per questa struttura.');return;}
   const m=_biaMese(h,ym);
   const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Biancheria ${e(_biaMeseNome(ym))}</title>
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Biancheria fattura ${e(_biaMeseNome(_biaMeseDopo(ym)))}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}@page{size:A4;margin:16mm;}
 h1{font-size:15pt;margin-bottom:2px;}.sub{color:#444;margin-bottom:14px;}.note{margin-top:12px;font-size:9.5pt;color:#333;line-height:1.5;}</style></head><body>
-<h1>Biancheria — totali di ${e(_biaMeseNome(ym))}</h1>
+<h1>Biancheria — fattura di ${e(_biaMeseNome(_biaMeseDopo(ym)))} (consumi di ${e(_biaMeseNome(ym).toLowerCase())})</h1>
 <div class="sub">${e(BIA_HOTELS[h])} · fornitore Raimondo · stampato il ${_biaFmt(new Date())}</div>
 ${_biaTabellaMese(m,true,h)}
 <div class="note">${_biaNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data.</div>

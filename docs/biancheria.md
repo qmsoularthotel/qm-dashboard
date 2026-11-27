@@ -1856,3 +1856,11 @@ riguarda le consegne di ottobre 2026.* Nomina **solo il mese scelto**: una prima
 di quel mese» è stata tolta perché ora la dice la nota. Scopo del riscontro (il QM): vedere se Raimondo fattura più di
 quanto porta — le bolle sono esatte, il confronto giusto è *Fattura − portati*. Ottobre 2026 SoulArt:
 +243 pezzi, € 99,44 senza IVA.
+
+**Rifatto lo stesso giorno: il menu va per mese della FATTURA.** Il QM: *«deve essere chiaro che in
+questa scheda i consumi che vedo sono quelli di settembre»*. Le voci del menu si chiamano
+«Fattura Ottobre 2026», «Fattura Novembre 2026»…: «Fattura Ottobre 2026» mostra le consegne di
+settembre. Dentro non cambia niente: `_biaMeseSel` e le chiavi `_bia.fatture['sa|2026-10']` restano il
+mese delle consegne (`_biaMeseDopo(ym)` dà solo il nome). La fattura n. 912 del 03/11/2026, inserita
+in `sa|2026-10`, compare quindi sotto «Fattura Novembre 2026». Nota sotto la tabella e titolo della
+stampa dicono «Fattura LANA.POLI di Ottobre 2026: riporta i consumi di settembre 2026…».
