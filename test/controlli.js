@@ -2951,7 +2951,9 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   ok('fattura: il mese dopo, anche a dicembre', _biaMeseDopo('2026-09')+' '+_biaMeseDopo('2026-12'), '2026-10 2027-01');
   ok('nota fattura: la fattura di ottobre riporta i consumi di settembre', /^Fattura LANA\.POLI di Ottobre 2026: riporta i consumi di settembre 2026\. In questa scheda vedi quindi i consumi di settembre 2026/.test(_biaNotaFattura('2026-09')), true);
   ok('menu: la voce si chiama come la fattura', /<option value="2026-09" selected>Fattura Ottobre 2026<\/option>/.test(box.innerHTML), true);
-  ok('nota fattura: sta nelle note del mese', _biaNoteMese(m)[0], _biaNotaFattura('2026-09'));
+  // 27/11/2026: la nota sta in cima, sotto il titolo «Riscontro fatturazioni», prima della tabella.
+  ok('nota fattura: sotto il titolo, prima della tabella', (function(h){var r=h.indexOf('Riscontro fatturazioni'),n=h.indexOf('Fattura LANA.POLI di Ottobre 2026');return r>=0&&n>r&&n<h.indexOf('<table',r);})(box.innerHTML), true);
+  ok('nota fattura: non ripetuta in fondo', _biaNoteMese(m).join(' ').indexOf('Fattura LANA.POLI')<0, true);
   ok('niente piu\' colonna consumi',              /Consumi fogli camera/.test(_biaTabellaMese(m,false,'sa')),false);
   _bia=prima;_biaHotel=ph;_biaMeseSel=pm;
 })();

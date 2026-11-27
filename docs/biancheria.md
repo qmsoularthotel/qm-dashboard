@@ -1864,3 +1864,6 @@ settembre. Dentro non cambia niente: `_biaMeseSel` e le chiavi `_bia.fatture['sa
 mese delle consegne (`_biaMeseDopo(ym)` dà solo il nome). La fattura n. 912 del 03/11/2026, inserita
 in `sa|2026-10`, compare quindi sotto «Fattura Novembre 2026». Nota sotto la tabella e titolo della
 stampa dicono «Fattura LANA.POLI di Ottobre 2026: riporta i consumi di settembre 2026…».
+La nota sta **in cima al riquadro**, subito sotto il titolo «Riscontro fatturazioni» e prima della
+tabella (`#bia-nota-fattura`; nella stampa sotto l'intestazione), non più in fondo con le altre note
+(27/11/2026, il QM: «sposta sotto riscontro fatturazioni»).

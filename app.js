@@ -17017,7 +17017,7 @@ function biaRenderConteggio(){
       h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Riscontro fatturazioni — ${esc(BIA_HOTELS[_biaHotel])}</span>
         <select onchange="biaSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_biaMeseSel?' selected':''}>Fattura ${_biaMeseNome(_biaMeseDopo(y))}</option>`).join('')}</select>
         <button onclick="biaPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
-      </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_biaTabellaMese(m,false,_biaHotel)}
+      </div><div class="panel-body" style="padding:0;overflow-x:auto;"><div id="bia-nota-fattura" style="padding:10px 14px;font-size:var(--fs-xs);color:var(--text);line-height:1.6;border-bottom:1px solid var(--border);">${esc(_biaNotaFattura(_biaMeseSel))}</div>${_biaTabellaMese(m,false,_biaHotel)}
         <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_biaNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. In rosso le voci fatturate più di quanto risulta.</div>
       </div></div>`;
     }
@@ -17254,7 +17254,6 @@ function _biaNotaFattura(ym){
 }
 function _biaNoteMese(m){
   const n=[];
-  const nf=_biaNotaFattura(m.ym);if(nf)n.push(nf);
   n.push(m.giri.length?`${m.giri.length} consegne nel mese: ${m.giri.map(d=>d.slice(0,5)).join(', ')}.`:'Nessuna consegna registrata nel mese.');
   if(m.nonReg.length)n.push(`Senza il dato di cosa ha riportato: ${m.nonReg.map(d=>d.slice(0,5)).join(', ')} — «Portati» non le comprende.`);
   return n;
@@ -17269,6 +17268,7 @@ function biaPrintMese(){
 h1{font-size:15pt;margin-bottom:2px;}.sub{color:#444;margin-bottom:14px;}.note{margin-top:12px;font-size:9.5pt;color:#333;line-height:1.5;}</style></head><body>
 <h1>Biancheria — fattura di ${e(_biaMeseNome(_biaMeseDopo(ym)))} (consumi di ${e(_biaMeseNome(ym).toLowerCase())})</h1>
 <div class="sub">${e(BIA_HOTELS[h])} · fornitore Raimondo · stampato il ${_biaFmt(new Date())}</div>
+<div class="sub">${e(_biaNotaFattura(ym))}</div>
 ${_biaTabellaMese(m,true,h)}
 <div class="note">${_biaNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data.</div>
 </body></html>`;
