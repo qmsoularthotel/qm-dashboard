@@ -227,6 +227,33 @@ elenco né cancellazioni né chiavi `qm_*`, non **scrive** chiavi `qm_*` in `loc
 
 ## Biancheria — Ciclo pulito/sporco (Fornitore Raimondo)
 
+### Testata nella composizione della Registration Cards (28/11/2026, QM: «va bene procedi»)
+
+Proposta mostrata al QM prima di toccare niente, perché la pagina la usano anche i colleghi della
+Galleria in Compass OPS. `biaRender` ora mette tutto in `.inv5-cornice.bia5` e in cima chiama
+`_biaTesta(oggi,passi,giornoGiro,vigilia)`:
+- riga oro «STRUTTURA · Biancheria Raimondo · giorno», titolo-verdetto («N cose da fare oggi» /
+  «Tutto fatto per oggi»), scelta della struttura a destra (`.bia5-seg`, al posto del selettore);
+- **Cosa fare oggi** (riquadro grande): i passi di sempre (stessa logica, stessi testi) e, col cerchio
+  rosso, cosa ferma la distinta del prossimo passaggio (`_biaDistFerma(_biaDistBlocchi(…))`).
+  Tocca una voce → `_biaVai('consumi'|'consegna'|'distinta')` scorre al riquadro (ancore
+  `#bia-a-consumi`, `#bia-a-consegna`, `#bia-dist-panel`). «Come funziona il ciclo» sta qui;
+- **Prossimo passaggio di Raimondo** (a destra): tre tappe (consumi fino al giorno prima, stampa la
+  vigilia, consegna), il foglio con le 7 voci dello sporco che esce e «Vai alla distinta» (la stampa
+  resta nel suo riquadro, che ha la sua data);
+- **tre riquadri**: giorni senza consumi (`_biaBuchi`), consegne del mese, pezzi non rientrati
+  (somma dei negativi di `_biaSaldo`, con la voce peggiore).
+- Sotto, i riquadri di lavoro **nello stesso ordine di prima** (consumi, distinta, consegna, storico):
+  i colleghi li trovano dove li cercano. Cambia solo l'aspetto (`.bia5 .panel`); le 7 caselle dei
+  consumi stanno su una riga (minimo 112px). Fascia verde in fondo con il ciclo.
+- `_biaBoxBuchi` (dati mancanti di tutte le strutture) resta **in cima**, sopra la testata, ma solo
+  quando manca qualcosa: «archivio completo» lo dice il riquadro «Giorni senza consumi».
+- **Compass OPS**: `_gbTesta` è la copia col rinomino meccanico (unica differenza: `_gbCalTxt()` al
+  posto di `GB_GIORNI_GIRO_TXT`). «Cosa fare oggi» lì resta di **tutte e due** le strutture
+  (25/09/2026): i passi dell'altra portano il nome davanti e «Passa a … ›» (`p.vai` → `gbSetHotel`).
+  Il CSS `.inv5-*` e `.bia5-*` è **copiato** in compass-ops.html (che non carica style.css): cambiando
+  là, si ricopia. Le altre pagine della Biancheria (Conteggio, Giacenza, Reso) non sono ancora toccate.
+
 Vista `biancheria` (`§§ BIANCHERIA` in app.js, chiave KV `qm_biancheria`). **Da non
 confondere con `resi-biancheria`**, che è un modulo diverso: quello tratta i pezzi
 inidonei (macchiati, strappati) che viaggiano in un sacco separato con distinta propria

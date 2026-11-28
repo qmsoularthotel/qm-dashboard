@@ -16732,6 +16732,78 @@ function biaAggiornaDelta(){
   _biaStatoRegistra();
 }
 
+// Testata della pagina nella composizione della Registration Cards (QM, 28/11/2026). Copiata
+// identica in Compass OPS col rinomino meccanico: niente qui deve dipendere da Compass.
+function _biaVai(dove){
+  const el=document.getElementById(dove==='distinta'?'bia-dist-panel':'bia-a-'+dove);
+  if(el){try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}}
+}
+function _biaTesta(oggi,passi,giornoGiro,vigilia){
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const gm=d=>BIA_GG_NOMI[d.getDay()]+' '+_biaFmt(d).slice(0,5);
+  // Il prossimo passaggio: la consegna di calendario dopo oggi, come la data proposta dalla distinta.
+  const prox=_biaGiroCalSucc(oggi);
+  const proxS=_biaFmt(prox);
+  const per=_biaPeriodo(_biaHotel,proxS);
+  const blocchi=_biaDistFerma(_biaDistBlocchi(_biaHotel,proxS));
+  const q=per&&!per.vuoto?_biaSommaConsumi(_biaHotel,per.dal,per.al):_biaVuote();
+  const tot=_biaTot(q);
+  const stampata=_biaDistStampata(_biaHotel,proxS);
+  const vig=new Date(prox.getTime());vig.setDate(vig.getDate()-1);
+  // Le voci «da fare»: i passi di sempre (numerati) e, in rosso, cosa ferma la distinta.
+  // p.vai: il passo è dell'altra struttura (in Compass OPS «Cosa fare oggi» le mostra tutte e due):
+  // toccarlo passa a quella struttura. p.dist: offre «L'ho già stampata».
+  const voci=passi.map((p,i)=>({n:String(i+1),t:p.t,d:p.d+(p.dist&&!p.vai?' <a href="#" onclick="biaSegnaDistintaFatta(event)" class="bia5-link" style="font-size:inherit">L\'ho già stampata</a>':''),vai:p.vai,
+    dove:/consumi/i.test(p.t)?'consumi':/portato/i.test(p.t)?'consegna':'distinta'}));
+  if(blocchi.length&&!stampata){
+    const quando=b=>b.date&&b.date.length?b.date.map(x=>{const d=_biaParse(x);return d?(d>oggi?gm(d)+' (non ancora arrivato)':gm(d)):x;}).join(', '):(b.testo||'');
+    voci.push({n:'!',rosso:true,dove:'distinta',t:'Distinta di '+gm(prox)+' ancora da completare',
+      d:esc(blocchi.map(b=>b.titolo+': '+quando(b)).join(' · ')),u:'Finché manca qualcosa la distinta non si stampa'});
+  }
+  const daFare=voci.filter(v=>!v.rosso).length+(voci.some(v=>v.rosso)?1:0);
+  const titolo=!voci.length?'Tutto fatto per oggi':daFare===1?'1 cosa da fare oggi':daFare+' cose da fare oggi';
+  const guida=`<div class="inv5-gs inv5-dopo">${voci.length?'Tocca una voce per andare al riquadro giusto. ':''}<button onclick="biaToggleGuida()" class="bia5-link">Come funziona il ciclo ${_biaGuida?'▴':'▾'}</button></div>
+    <div class="bia5-guida" style="${_biaGuida?'':'display:none;'}">
+      <strong>1.</strong> Ogni giorno le cameriere consegnano i fogli camera: i totali si inseriscono qui.<br>
+      <strong>2.</strong> Il pomeriggio prima del passaggio si stampa la distinta dei sacchi che escono e si lascia in reception.<br>
+      <strong>3.</strong> ${BIA_GIORNI_GIRO_TXT.charAt(0).toUpperCase()+BIA_GIORNI_GIRO_TXT.slice(1)} alle 8 Raimondo ritira i sacchi e consegna il pulito: si registra quanto ha portato.<br>
+      <strong>4.</strong> Se ha portato meno del dovuto la differenza resta segnata, e il totale dice se la perdita è occasionale o continua.
+    </div>`;
+  const grande=voci.length
+    ?`<div class="inv5-grande"><div class="inv5-gl">Cosa fare oggi</div>${voci.map(v=>`<div class="inv5-voce bia5-voce" onclick="${v.vai?`biaSetHotel('${v.vai}')`:`_biaVai('${v.dove}')`}"><span class="inv5-num${v.rosso?' fin':''}">${v.n}</span><div><div class="inv5-vt">${esc(v.t)}</div><div class="inv5-vs">${v.d}</div>${v.u?`<div class="inv5-urg">${esc(v.u)}</div>`:''}${v.vai?`<div class="inv5-vs"><span class="bia5-link">Passa a ${esc(BIA_STO_NOMI[v.vai]||BIA_HOTELS[v.vai])} ›</span></div>`:''}</div></div>`).join('')}${guida}</div>`
+    :`<div class="inv5-grande"><div class="inv5-gl">Cosa fare oggi</div><div class="inv5-centro" style="min-height:170px"><span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span><div class="inv5-gt">Tutto fatto per oggi</div><div class="inv5-gs">${giornoGiro?'La consegna di oggi è registrata.':(vigilia?'La distinta per domani è stampata.':'Oggi Raimondo non passa e non c\'è distinta da preparare.')}</div></div>${guida}</div>`;
+  const tappa=(n,t,x)=>`<div class="inv5-tappa"><span class="inv5-tn">${n}</span><div><b>${esc(t)}</b><span>${esc(x)}</span></div></div>`;
+  const ultimoCons=new Date(prox.getTime());ultimoCons.setDate(ultimoCons.getDate()-1);
+  const lato=`<div class="inv5-lato"><div class="inv5-ll">Prossimo passaggio di Raimondo</div>
+    <div class="inv5-tappe">
+      ${tappa(1,'Consumi fino a '+BIA_GG_NOMI[ultimoCons.getDay()],per&&!per.vuoto?_biaPeriodoTxt(per):'')}
+      ${tappa(2,stampata?'Distinta stampata':'Stampa della distinta',stampata?'pronta in reception':gm(vig)+' pomeriggio, in reception')}
+      ${tappa(3,'Consegna',gm(prox)+' · ritira lo sporco, porta il pulito')}
+    </div>
+    <div class="inv5-foglio"><div class="inv5-ft"><span>Distinta sporco · ${esc(BIA_STO_NOMI[_biaHotel]||BIA_HOTELS[_biaHotel])}</span><span>${proxS.slice(0,5)}</span></div>
+      ${BIA_VOCI.map(v=>`<div class="inv5-fr"><span>${esc(BIA_DOT_PLURALE[v]||v)}</span><b>${Number(q[v])||0}</b></div>`).join('')}
+    </div>
+    <div class="inv5-nota">${blocchi.length?'Parziale: finché mancano dei dati i numeri non sono quelli giusti':tot?'Escono '+tot+' pezzi':'Ancora nessun consumo per questa consegna'}</div>
+    <button class="btn-primary inv5-crea" onclick="_biaVai('distinta')">Vai alla distinta</button>
+  </div>`;
+  // Tre riquadri: giorni senza consumi, consegne del mese, pezzi non rientrati.
+  const bu=_biaBuchi(_biaHotel,oggi);
+  const mese=_biaFmt(oggi).slice(3);
+  const giriMese=_biaGiri(_biaHotel).filter(g=>String(g.data).slice(3)===mese);
+  const ult=giriMese.map(g=>_biaParse(g.data)).filter(Boolean).sort((a,b)=>b-a)[0];
+  const sal=_biaSaldo(_biaHotel);
+  const mancanti=BIA_VOCI.reduce((t,v)=>t+Math.max(0,-(Number(sal[v])||0)),0);
+  const peggio=BIA_VOCI.map(v=>[v,Math.max(0,-(Number(sal[v])||0))]).sort((a,b)=>b[1]-a[1])[0];
+  const passo=(n,t,x)=>`<div class="inv5-passo"><span class="inv5-pn">${n}</span><div><div class="inv5-pt">${esc(t)}</div><div class="inv5-ps">${esc(x)}</div></div></div>`;
+  const passiH=`<div class="inv5-passi">
+    ${passo(bu.consumi.length,'Giorni senza consumi',bu.consumi.length?'il più vecchio: '+bu.consumi[0].slice(0,5):'archivio completo fino a ieri')}
+    ${passo(giriMese.length,'Consegne a '+BIA_MESI[oggi.getMonth()].toLowerCase(),giriMese.length?(bu.consegne.length?bu.consegne.length+' da registrare':'tutte registrate')+' · l\'ultima '+gm(ult):(bu.consegne.length?bu.consegne.length+' da registrare':'nessuna ancora'))}
+    ${passo(mancanti,'Pezzi non rientrati',mancanti?'dall\'inizio del conteggio · soprattutto '+(BIA_DOT_PLURALE[peggio[0]]||peggio[0]).toLowerCase()+' ('+peggio[1]+')':'Raimondo ha riportato tutto')}
+  </div>`;
+  const seg=`<div class="bia5-seg">${Object.keys(BIA_HOTELS).map(k=>`<button onclick="biaSetHotel('${k}')" class="${k===_biaHotel?'on':''}">${esc(BIA_HOTELS[k])}</button>`).join('')}</div>`;
+  return`<div class="inv5-hero"><div><div class="inv5-k">${esc(BIA_HOTELS[_biaHotel])} · Biancheria Raimondo · ${esc(BIA_GG_NOMI[oggi.getDay()])} ${esc(_biaFmt(oggi).slice(0,5))}</div><div class="inv5-t">${esc(titolo)}</div></div>${seg}</div>
+    <div class="inv5-griglia bia5-griglia">${grande}${lato}</div>${passiH}`;
+}
 const _biaTh='text-align:center;padding:7px 8px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;';
 const _biaBtnIco='background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:var(--fs-xxs);color:var(--text-muted);cursor:pointer;font-family:inherit;margin-left:4px;';
 function biaRender(){
@@ -16770,8 +16842,8 @@ function biaRender(){
 
   let h='';
 
-  // ── DATI MANCANTI ── sempre in vista, per tutte le strutture (07/11/2026)
-  h+=_biaBoxBuchi(oggi);
+  // ── DATI MANCANTI ── sempre in vista, per tutte le strutture (07/11/2026): ora subito sotto
+  // la testata (_biaTesta), dentro la cornice.
 
   // ── COSA FARE OGGI ──
   // Il motivo per cui questa pagina era difficile da usare non era il calcolo: era che
@@ -16798,40 +16870,15 @@ function biaRender(){
     t:'Prepara e stampa la distinta di domani — '+BIA_HOTELS[_biaHotel]+', consegna del '+dataDomani,
     d:'Domani alle 8 passa Raimondo: la distinta va stampata oggi pomeriggio e lasciata in reception. Domattina non ci sarà tempo.'
       +' <a href="#" onclick="biaSegnaDistintaFatta(event)" style="color:var(--accent);font-weight:700;">L\'ho già stampata</a>'});
-  const nomeOggi=BIA_GG_NOMI[oggi.getDay()];
-  h+=`<div style="border:1.5px solid ${passi.length?'var(--accent)':'var(--green)'};border-radius:12px;padding:14px 16px;margin-bottom:16px;background:var(--surface);">
-    <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin-bottom:8px;">Cosa fare oggi · ${esc(nomeOggi)} ${esc(_biaFmt(oggi))}</div>`;
-  if(!passi.length){
-    h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);">Tutto fatto per oggi.</div>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;">${giornoGiro?'La consegna di oggi è registrata.':(vigilia?'La distinta per domani è stampata.':'Oggi Raimondo non passa e non c\'è distinta da preparare.')}</div>`;
-  }else{
-    passi.forEach((p,i)=>{
-      h+=`<div style="display:flex;gap:10px;align-items:flex-start;${i?'margin-top:10px;':''}">
-        <span style="flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:var(--fs-xxs);font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--fs-sm);font-weight:700;">${esc(p.t)}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-top:2px;">${p.d}</div>
-        </div>
-      </div>`;
-    });
-  }
-  h+=`<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
-      <button onclick="biaToggleGuida()" style="background:none;border:none;padding:0;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;cursor:pointer;">Come funziona il ciclo ${_biaGuida?'▴':'▾'}</button>
-      <div style="${_biaGuida?'':'display:none;'}font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.7;margin-top:6px;">
-        <strong>1.</strong> Ogni giorno le cameriere consegnano i fogli camera: i totali si inseriscono qui.<br>
-        <strong>2.</strong> Il pomeriggio prima del passaggio — ${esc(BIA_GG_NOMI[1])}, ${esc(BIA_GG_NOMI[3])} e ${esc(BIA_GG_NOMI[5])} — si stampa la distinta dei sacchi che escono e si lascia in reception.<br>
-        <strong>3.</strong> ${BIA_GIORNI_GIRO_TXT.charAt(0).toUpperCase()+BIA_GIORNI_GIRO_TXT.slice(1)} alle 8 Raimondo ritira i sacchi e consegna il pulito: si registra quanto ha portato.<br>
-        <strong>4.</strong> Se ha portato meno del dovuto la differenza resta segnata, e il totale in fondo dice se la perdita è occasionale o continua.
-      </div>
-    </div>
-  </div>`;
-
-  // Selettore struttura
-  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-      ${Object.keys(BIA_HOTELS).map(k=>`<button onclick="biaSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;background:${k===_biaHotel?'var(--accent)':'var(--surface)'};color:${k===_biaHotel?'#fff':'var(--text-dim)'};">${esc(BIA_HOTELS[k])}</button>`).join('')}
-    </div>
-  </div>`;
+  // ── TESTATA nella composizione della Registration Cards (QM, 28/11/2026) ──
+  // Riga oro + titolo-verdetto, «Cosa fare oggi» (i passi di sempre + cosa ferma la distinta),
+  // il prossimo passaggio di Raimondo col foglio della distinta, tre riquadri. Sotto, i riquadri
+  // di lavoro nello STESSO ordine di prima (i colleghi non devono cercarli): consumi, distinta,
+  // consegna, storico. Vedi _biaTesta.
+  // L'avviso dei dati mancanti resta IN CIMA (07/11/2026), sopra la testata, ma solo quando manca
+  // qualcosa: «archivio completo» lo dice già il riquadro «Giorni senza consumi».
+  if(Object.keys(BIA_HOTELS).some(k=>_biaNBuchi(_biaBuchi(k,oggi))))h+=_biaBoxBuchi(oggi);
+  h+=_biaTesta(oggi,passi,giornoGiro,vigilia);
 
   // ── Consumi del giorno ──
   // La data scelta va riletta dal campo prima di rigenerare l'HTML: riscrivendo sempre
@@ -16843,7 +16890,7 @@ function biaRender(){
   const consSel=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===consData);
   if(_biaRiscrivi.k&&_biaRiscrivi.k!==_biaHotel+'|'+consData)_biaRiscrivi={k:'',voci:{},msg:[]};
   const rsc=_biaRiscrivi.voci;
-  h+=`<div class="panel" style="margin-bottom:16px;">
+  h+=`<div id="bia-a-consumi"></div><div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">Consumi giornalieri dai fogli camera</span>
       <button onclick="biaToggleUltimi()" style="margin-left:auto;background:${_biaUltimiAperti?'var(--accent)':'var(--surface)'};color:${_biaUltimiAperti?'#fff':'var(--accent)'};border:1px solid ${_biaUltimiAperti?'var(--accent)':'var(--border)'};padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">Ultimi consumi inseriti ${_biaUltimiAperti?'▴':'▾'}</button>
     </div>
@@ -16852,7 +16899,7 @@ function biaRender(){
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
         ${_biaFreccia('consumi',-1)}<input type="date" id="bia-cons-data" data-h="${_biaHotel}" value="${consIso}" max="${_biaToIso(_biaFmt(oggi))}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_biaFreccia('consumi',1,consIso>=_biaToIso(_biaFmt(oggi)))}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;">
         ${BIA_VOCI.map((v,i)=>`<div>
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
           <input type="number" min="0" id="bia-c-${i}" value="${v in rsc?'':(consSel?(Number(consSel.q[v])||0):0)}" ${v in rsc?'placeholder="riscrivi"':''} onfocus="this.select()" style="width:100%;padding:7px 9px;border:${v in rsc?'2px solid var(--red)':'1px solid var(--border)'};border-radius:6px;font-size:var(--fs-sm);text-align:center;">
@@ -16893,7 +16940,7 @@ function biaRender(){
 
   // ── La consegna del pulito ──
   const giroDate=_biaParse(giroData);
-  h+=`<div class="panel" style="margin-bottom:16px;">
+  h+=`<div id="bia-a-consegna"></div><div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">${'Consegna biancheria pulita'+(giroDate?' · '+BIA_GG_NOMI[giroDate.getDay()]+' '+_biaFmt(giroDate).slice(0,5):'')}</span>
       ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>':''}
     </div>
@@ -17085,7 +17132,8 @@ function biaRender(){
   // Conteggio a scorrere e Riscontro fatturazioni stanno nella voce «Conteggio Biancheria»
   // (16/11/2026, il QM): vedi biaRenderConteggio, ridisegnata insieme a questa.
 
-  el.innerHTML=h;
+  h+=`<div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Raimondo passa ${BIA_GIORNI_GIRO_TXT}: ritira lo sporco dei giorni dal passaggio precedente fino al giorno prima, e porta lo stesso numero di pezzi puliti. Se ne porta meno, la differenza resta nei «pezzi non rientrati».</span></div>`;
+  el.innerHTML='<div class="inv5-cornice bia5">'+h+'</div>';
   biaRenderConteggio();
 }
 

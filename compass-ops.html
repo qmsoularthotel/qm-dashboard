@@ -9,7 +9,7 @@
 <link rel="icon" href="img/compass-ops-favicon.svg" type="image/svg+xml">
 <!-- Stesso foglio di stile di Compass: menu, barra in alto, pannelli e schede sono quelli
      (25/09/2026). Il numero si allinea da solo con strumenti/versione.sh. -->
-<link rel="stylesheet" href="style.css?v=342">
+<link rel="stylesheet" href="style.css?v=344">
 <style>
 /* Solo cio' che style.css di Compass non ha: il resto viene da li'. */
 :root{--shadow:0 1px 4px rgba(0,0,0,.08);}
@@ -236,6 +236,103 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
   .gp-tab td.gp-nome b{white-space:normal;line-height:1.2;}
 }
 
+
+/* ── Copiato da style.css (28/11/2026): la composizione della Registration Cards usata dal
+   Consumo Biancheria. Cambiando là, si ricopia qui. ── */
+/* Inventari › Stock con la composizione della Registration Cards della Galleria (25/11/2026, QM, con la
+   foto): cornice; riga oro + titolo grande, pastiglie a destra; riquadro grande a sinistra con la rosa dei
+   venti in filigrana; a destra, bordo oro, il foglio della lista per il fornitore; tre riquadri come i
+   passi (cerchio navy/oro); tabella; fascia in fondo. Colonne in classi, mai in linea. */
+.inv5-cornice{background:var(--surface);border:1px solid var(--border-light);border-radius:14px;padding:18px 20px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.inv5-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 2px 14px;}
+.inv5-k{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;}
+.inv5-t{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:2px;color:var(--text);}
+.inv5-griglia{display:grid;grid-template-columns:1.45fr 1fr;gap:14px;align-items:stretch;}
+.inv5-grande{position:relative;overflow:hidden;background:var(--bg);border:1px solid var(--border-light);border-radius:14px;padding:16px 18px;min-height:260px;}
+.inv5-grande::before{content:'';position:absolute;right:-90px;bottom:-90px;width:300px;height:300px;background:url('img/compass-stella.png') no-repeat center/contain;opacity:.09;transform:rotate(22deg);pointer-events:none;}
+.inv5-grande>*{position:relative;}
+.inv5-centro{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;}
+.inv5-cerchio{width:60px;height:60px;border-radius:50%;background:var(--accent);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:6px;}
+.inv5-cerchio svg{width:26px;height:26px;}
+.inv5-gt{font-size:17px;font-weight:700;color:var(--text);}
+.inv5-gs{font-size:var(--fs-sm);color:var(--text-muted);}
+.inv5-gl,.inv5-ll{font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+.inv5-voce{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border-light);}
+.inv5-voce:last-child{border-bottom:none;}
+.inv5-num{width:34px;height:34px;border-radius:50%;background:var(--accent);border:2px solid var(--gold);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.inv5-num.fin{border-color:var(--red);}
+.inv5-vt{font-size:15px;font-weight:700;color:var(--text);line-height:1.35;}
+.inv5-vq{font-weight:600;color:var(--accent);}
+.inv5-vs{font-size:13px;color:var(--text-muted);margin-top:2px;line-height:1.45;}
+.inv5-rosso{color:var(--red)!important;font-weight:700;}
+.inv5-blu{color:var(--blue);font-weight:600;}
+.inv5-lato{background:var(--surface);border:1px solid var(--border-light);border-top:4px solid var(--gold);border-radius:14px;padding:14px 16px 16px;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.inv5-foglio{flex:1;background:#fff;border:1px solid var(--border-light);border-radius:4px;box-shadow:0 6px 18px rgba(12,31,51,.10);padding:12px 14px;transform:rotate(-1.2deg);margin:2px 6px;}
+.inv5-ft{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--gold);padding-bottom:6px;margin-bottom:6px;}
+.inv5-fr{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--text);padding:5px 0;border-bottom:1px dashed var(--border-light);}
+.inv5-fr b{white-space:nowrap;color:var(--accent);}
+.inv5-fvuoto{font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;}
+.inv5-nota{font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px;}
+.inv5-tappe{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;}
+.inv5-tappa{display:flex;align-items:center;gap:10px;}
+.inv5-tn{width:24px;height:24px;border-radius:50%;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.inv5-tappa b{display:block;font-size:13px;color:var(--text);}
+.inv5-tappa div span{font-size:12px;color:var(--text-muted);}
+.inv5-crea{margin-top:12px;align-self:center;}
+.inv5-urg{font-size:12px;font-weight:700;color:var(--red);margin-top:3px;}
+.inv5-dopo{margin-top:12px;}
+.inv5-passi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+.inv5-passo{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px;}
+.inv5-pn{min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.inv5-pt{font-size:13px;font-weight:700;color:var(--text);}
+.inv5-ps{font-size:12px;color:var(--text-muted);margin-top:1px;line-height:1.45;}
+.inv5-tutti{margin-top:14px;background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:14px 0 4px;}
+.inv5-tutti .inv5-ll{padding:0 16px;}
+.inv5-tw{overflow-x:auto;}
+.inv5-tab{width:100%;border-collapse:collapse;font-size:13.5px;}
+.inv5-tab th{text-align:left;font-size:11px;font-weight:600;color:var(--text-dim);padding:6px 16px;border-bottom:1px solid var(--border-light);white-space:nowrap;}
+.inv5-tab td{padding:9px 16px;border-bottom:1px solid var(--border-light);color:var(--text);}
+.inv5-tab tbody tr:last-child td{border-bottom:none;}
+.inv5-tab .r{text-align:right;white-space:nowrap;}
+.inv5-tab td small{display:block;font-size:11px;color:var(--blue);font-weight:600;}
+.inv5-stock{font-family:inherit;font-size:13.5px;font-weight:700;color:var(--text);background:none;border:none;padding:0;cursor:pointer;}
+.inv5-stock:hover{color:var(--accent);text-decoration:underline dotted;}
+.inv5-gr{color:var(--text-muted)!important;}
+.inv5-no{color:var(--text-dim);}
+.inv5-fascia{display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 14px;border-radius:12px;background:var(--green-bg);color:var(--green);font-size:12.5px;line-height:1.45;}
+.inv5-fascia svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;}
+@media (max-width:900px){
+  .inv5-griglia{grid-template-columns:1fr;}
+  .inv5-foglio{transform:none;}
+}
+@media (max-width:640px){
+  .inv5-cornice{padding:14px 12px;}
+  .inv5-passi{grid-template-columns:1fr;}
+  .inv5-tab th,.inv5-tab th.r{white-space:normal;}
+  .inv5-tab th,.inv5-tab td{padding:8px 10px;}
+  .inv5-tab:not(.inv7-tab):not(.inv8-tab):not(.rev5-tab) th:nth-child(4),.inv5-tab:not(.inv7-tab):not(.inv8-tab):not(.rev5-tab) td:nth-child(4){display:none;}
+  .inv5-t{font-size:19px;}
+/* Consumo Biancheria (copia di Compass) nella composizione della Registration Cards (28/11/2026, QM: «va bene procedi»):
+   testata nuova (_biaTesta: riga oro, titolo-verdetto, «Cosa fare oggi», prossimo passaggio di
+   Raimondo col foglio della distinta, tre riquadri) e sotto i riquadri di lavoro di sempre, nello
+   stesso ordine, ridisegnati come riquadri bianchi della cornice. Copiato identico in Compass OPS
+   (prefisso gb5-… → stesso nome: le classi bia5-* restano bia5-* anche là, vedi compass-ops.html). */
+.bia5 .panel{border:1px solid var(--border-light);border-radius:12px;box-shadow:none;margin-bottom:14px!important;overflow:hidden;}
+.bia5 .panel-header{background:none;border-bottom:none;padding:14px 16px 4px;}
+.bia5 .panel-title{font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.07em;}
+.bia5 .panel-body{padding-top:8px!important;}
+.bia5 .inv5-passi{margin-bottom:14px;}
+.bia5-griglia .inv5-foglio{flex:0 0 auto;}
+.bia5-voce{cursor:pointer;}
+.bia5-voce:hover .inv5-vt{color:var(--accent);text-decoration:underline dotted;}
+.bia5-link{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;}
+.bia5-guida{font-size:12px;color:var(--text-muted);line-height:1.7;margin-top:6px;}
+.bia5-seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-wrap:wrap;}
+.bia5-seg button{border:none;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text-muted);font-family:inherit;}
+.bia5-seg button.on{background:var(--accent);color:#fff;}
+.bia5>.inv5-fascia{margin-top:0;}
+.bia5 .btn-primary{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:var(--fs-sm);font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;letter-spacing:.3px;}
+.bia5 .btn-primary:hover{background:#0c1f33;transform:translateY(-2px);box-shadow:0 4px 12px rgba(28,58,94,.25);}
 </style>
 </head>
 <body>
@@ -258,12 +355,12 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-28.16';
+const QM_APP_BUILD='2026-11-28.18';
 // Il numero di versione si vede nella barra degli indirizzi nello stesso formato di Compass
 // (?v=633-20261125: numero che cresce a ogni pubblicazione, trattino, data), 25/11/2026, QM.
 // Lo fa crescere strumenti/versione.sh quando il file cambia. Senza ricaricare (replaceState):
 // l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione, con QM_APP_BUILD.
-const OPS_V='77-20261128';
+const OPS_V='79-20261128';
 try{const u=new URL(location.href);if(u.searchParams.get('v')!==OPS_V){u.searchParams.set('v',OPS_V);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
@@ -1768,6 +1865,78 @@ function gbAggiornaDelta(){
   _gbStatoRegistra();
 }
 
+// Testata della pagina nella composizione della Registration Cards (QM, 28/11/2026). Copiata
+// identica in Compass OPS col rinomino meccanico: niente qui deve dipendere da Compass.
+function _gbVai(dove){
+  const el=document.getElementById(dove==='distinta'?'gb-dist-panel':'gb-a-'+dove);
+  if(el){try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}}
+}
+function _gbTesta(oggi,passi,giornoGiro,vigilia){
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const gm=d=>GB_GG_NOMI[d.getDay()]+' '+_gbFmt(d).slice(0,5);
+  // Il prossimo passaggio: la consegna di calendario dopo oggi, come la data proposta dalla distinta.
+  const prox=_gbGiroCalSucc(oggi);
+  const proxS=_gbFmt(prox);
+  const per=_gbPeriodo(_gbHotel,proxS);
+  const blocchi=_gbDistFerma(_gbDistBlocchi(_gbHotel,proxS));
+  const q=per&&!per.vuoto?_gbSommaConsumi(_gbHotel,per.dal,per.al):_gbVuote();
+  const tot=_gbTot(q);
+  const stampata=_gbDistStampata(_gbHotel,proxS);
+  const vig=new Date(prox.getTime());vig.setDate(vig.getDate()-1);
+  // Le voci «da fare»: i passi di sempre (numerati) e, in rosso, cosa ferma la distinta.
+  // p.vai: il passo è dell'altra struttura (in Compass OPS «Cosa fare oggi» le mostra tutte e due):
+  // toccarlo passa a quella struttura. p.dist: offre «L'ho già stampata».
+  const voci=passi.map((p,i)=>({n:String(i+1),t:p.t,d:p.d+(p.dist&&!p.vai?' <a href="#" onclick="gbSegnaDistintaFatta(event)" class="bia5-link" style="font-size:inherit">L\'ho già stampata</a>':''),vai:p.vai,
+    dove:/consumi/i.test(p.t)?'consumi':/portato/i.test(p.t)?'consegna':'distinta'}));
+  if(blocchi.length&&!stampata){
+    const quando=b=>b.date&&b.date.length?b.date.map(x=>{const d=_gbParse(x);return d?(d>oggi?gm(d)+' (non ancora arrivato)':gm(d)):x;}).join(', '):(b.testo||'');
+    voci.push({n:'!',rosso:true,dove:'distinta',t:'Distinta di '+gm(prox)+' ancora da completare',
+      d:esc(blocchi.map(b=>b.titolo+': '+quando(b)).join(' · ')),u:'Finché manca qualcosa la distinta non si stampa'});
+  }
+  const daFare=voci.filter(v=>!v.rosso).length+(voci.some(v=>v.rosso)?1:0);
+  const titolo=!voci.length?'Tutto fatto per oggi':daFare===1?'1 cosa da fare oggi':daFare+' cose da fare oggi';
+  const guida=`<div class="inv5-gs inv5-dopo">${voci.length?'Tocca una voce per andare al riquadro giusto. ':''}<button onclick="gbToggleGuida()" class="bia5-link">Come funziona il ciclo ${_gbGuida?'▴':'▾'}</button></div>
+    <div class="bia5-guida" style="${_gbGuida?'':'display:none;'}">
+      <strong>1.</strong> Ogni giorno le cameriere consegnano i fogli camera: i totali si inseriscono qui.<br>
+      <strong>2.</strong> Il pomeriggio prima del passaggio si stampa la distinta dei sacchi che escono e si lascia in reception.<br>
+      <strong>3.</strong> ${_gbCalTxt().charAt(0).toUpperCase()+_gbCalTxt().slice(1)} alle 8 Raimondo ritira i sacchi e consegna il pulito: si registra quanto ha portato.<br>
+      <strong>4.</strong> Se ha portato meno del dovuto la differenza resta segnata, e il totale dice se la perdita è occasionale o continua.
+    </div>`;
+  const grande=voci.length
+    ?`<div class="inv5-grande"><div class="inv5-gl">Cosa fare oggi</div>${voci.map(v=>`<div class="inv5-voce bia5-voce" onclick="${v.vai?`gbSetHotel('${v.vai}')`:`_gbVai('${v.dove}')`}"><span class="inv5-num${v.rosso?' fin':''}">${v.n}</span><div><div class="inv5-vt">${esc(v.t)}</div><div class="inv5-vs">${v.d}</div>${v.u?`<div class="inv5-urg">${esc(v.u)}</div>`:''}${v.vai?`<div class="inv5-vs"><span class="bia5-link">Passa a ${esc(GB_STO_NOMI[v.vai]||GB_HOTELS[v.vai])} ›</span></div>`:''}</div></div>`).join('')}${guida}</div>`
+    :`<div class="inv5-grande"><div class="inv5-gl">Cosa fare oggi</div><div class="inv5-centro" style="min-height:170px"><span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span><div class="inv5-gt">Tutto fatto per oggi</div><div class="inv5-gs">${giornoGiro?'La consegna di oggi è registrata.':(vigilia?'La distinta per domani è stampata.':'Oggi Raimondo non passa e non c\'è distinta da preparare.')}</div></div>${guida}</div>`;
+  const tappa=(n,t,x)=>`<div class="inv5-tappa"><span class="inv5-tn">${n}</span><div><b>${esc(t)}</b><span>${esc(x)}</span></div></div>`;
+  const ultimoCons=new Date(prox.getTime());ultimoCons.setDate(ultimoCons.getDate()-1);
+  const lato=`<div class="inv5-lato"><div class="inv5-ll">Prossimo passaggio di Raimondo</div>
+    <div class="inv5-tappe">
+      ${tappa(1,'Consumi fino a '+GB_GG_NOMI[ultimoCons.getDay()],per&&!per.vuoto?_gbPeriodoTxt(per):'')}
+      ${tappa(2,stampata?'Distinta stampata':'Stampa della distinta',stampata?'pronta in reception':gm(vig)+' pomeriggio, in reception')}
+      ${tappa(3,'Consegna',gm(prox)+' · ritira lo sporco, porta il pulito')}
+    </div>
+    <div class="inv5-foglio"><div class="inv5-ft"><span>Distinta sporco · ${esc(GB_STO_NOMI[_gbHotel]||GB_HOTELS[_gbHotel])}</span><span>${proxS.slice(0,5)}</span></div>
+      ${GB_VOCI.map(v=>`<div class="inv5-fr"><span>${esc(GB_DOT_PLURALE[v]||v)}</span><b>${Number(q[v])||0}</b></div>`).join('')}
+    </div>
+    <div class="inv5-nota">${blocchi.length?'Parziale: finché mancano dei dati i numeri non sono quelli giusti':tot?'Escono '+tot+' pezzi':'Ancora nessun consumo per questa consegna'}</div>
+    <button class="btn-primary inv5-crea" onclick="_gbVai('distinta')">Vai alla distinta</button>
+  </div>`;
+  // Tre riquadri: giorni senza consumi, consegne del mese, pezzi non rientrati.
+  const bu=_gbBuchi(_gbHotel,oggi);
+  const mese=_gbFmt(oggi).slice(3);
+  const giriMese=_gbGiri(_gbHotel).filter(g=>String(g.data).slice(3)===mese);
+  const ult=giriMese.map(g=>_gbParse(g.data)).filter(Boolean).sort((a,b)=>b-a)[0];
+  const sal=_gbSaldo(_gbHotel);
+  const mancanti=GB_VOCI.reduce((t,v)=>t+Math.max(0,-(Number(sal[v])||0)),0);
+  const peggio=GB_VOCI.map(v=>[v,Math.max(0,-(Number(sal[v])||0))]).sort((a,b)=>b[1]-a[1])[0];
+  const passo=(n,t,x)=>`<div class="inv5-passo"><span class="inv5-pn">${n}</span><div><div class="inv5-pt">${esc(t)}</div><div class="inv5-ps">${esc(x)}</div></div></div>`;
+  const passiH=`<div class="inv5-passi">
+    ${passo(bu.consumi.length,'Giorni senza consumi',bu.consumi.length?'il più vecchio: '+bu.consumi[0].slice(0,5):'archivio completo fino a ieri')}
+    ${passo(giriMese.length,'Consegne a '+GB_MESI[oggi.getMonth()].toLowerCase(),giriMese.length?(bu.consegne.length?bu.consegne.length+' da registrare':'tutte registrate')+' · l\'ultima '+gm(ult):(bu.consegne.length?bu.consegne.length+' da registrare':'nessuna ancora'))}
+    ${passo(mancanti,'Pezzi non rientrati',mancanti?'dall\'inizio del conteggio · soprattutto '+(GB_DOT_PLURALE[peggio[0]]||peggio[0]).toLowerCase()+' ('+peggio[1]+')':'Raimondo ha riportato tutto')}
+  </div>`;
+  const seg=`<div class="bia5-seg">${Object.keys(GB_HOTELS).map(k=>`<button onclick="gbSetHotel('${k}')" class="${k===_gbHotel?'on':''}">${esc(GB_HOTELS[k])}</button>`).join('')}</div>`;
+  return`<div class="inv5-hero"><div><div class="inv5-k">${esc(GB_HOTELS[_gbHotel])} · Biancheria Raimondo · ${esc(GB_GG_NOMI[oggi.getDay()])} ${esc(_gbFmt(oggi).slice(0,5))}</div><div class="inv5-t">${esc(titolo)}</div></div>${seg}</div>
+    <div class="inv5-griglia bia5-griglia">${grande}${lato}</div>${passiH}`;
+}
 const _gbTh='text-align:center;padding:7px 8px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;';
 const _gbBtnIco='background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:var(--fs-xxs);color:var(--text-muted);cursor:pointer;font-family:inherit;margin-left:4px;';
 function _gbRenderCore(){
@@ -1806,8 +1975,8 @@ function _gbRenderCore(){
 
   let h='';
 
-  // ── DATI MANCANTI ── sempre in vista, per tutte le strutture (07/11/2026)
-  h+=_gbBoxBuchi(oggi);
+  // ── DATI MANCANTI ── sempre in vista, per tutte le strutture (07/11/2026): ora subito sotto
+  // la testata (_gbTesta), dentro la cornice.
 
   // ── COSA FARE OGGI ──
   // Il motivo per cui questa pagina era difficile da usare non era il calcolo: era che
@@ -1819,49 +1988,16 @@ function _gbRenderCore(){
   // struttura un collegamento che ci passa. Stessa logica di prima, per struttura (_gbPassiOggi).
   const giornoGiro=_gbGiornoGiro(oggi);
   const distPronta=_gbDistStampata(_gbHotel,vigilia?_gbFmt(_gbDomani(oggi)):_gbFmt(oggi));
-  const nomeOggi=GB_GG_NOMI[oggi.getDay()];
+  // ── TESTATA nella composizione della Registration Cards (QM, 28/11/2026) ── copia di Compass.
+  // Qui «Cosa fare oggi» resta di tutte e due le strutture (25/09/2026): i passi dell'altra
+  // portano il suo nome e toccarli ci passa (p.vai).
   const perH=Object.keys(GB_HOTELS).map(k=>({k,...(_gbPassiOggi(k))}));
-  const nPassi=perH.reduce((t,x)=>t+x.passi.length,0);
-  h+=`<div style="border:1.5px solid ${nPassi?'var(--accent)':'var(--green)'};border-radius:12px;padding:14px 16px;margin-bottom:16px;background:var(--surface);">
-    <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin-bottom:8px;">Cosa fare oggi · ${esc(nomeOggi)} ${esc(_gbFmt(oggi))}</div>`;
-  if(!nPassi)h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);margin-bottom:4px;">Tutto fatto per oggi, in tutte e due le strutture.</div>`;
-  let num=0;
-  perH.forEach((x,iH)=>{
-    const altra=x.k!==_gbHotel;
-    h+=`<div style="${iH?'margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);':''}">
-      <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;margin-bottom:4px;">${esc(GB_HOTELS[x.k])}</div>`;
-    x.passi.forEach(p=>{
-      num++;
-      h+=`<div style="display:flex;gap:10px;align-items:flex-start;margin-top:6px;">
-        <span style="flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:var(--fs-xxs);font-weight:700;display:flex;align-items:center;justify-content:center;">${num}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--fs-sm);font-weight:700;">${esc(p.t)}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-top:2px;">${esc(p.d)}${p.dist&&!altra?' <a href="#" onclick="gbSegnaDistintaFatta(event)" style="color:var(--accent);font-weight:700;">L\'ho già stampata</a>':''}</div>
-        </div>
-        ${altra?`<button onclick="gbSetHotel('${x.k}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;">Passa a ${esc(GB_STO_NOMI[x.k]||GB_HOTELS[x.k])} ›</button>`:''}
-      </div>`;
-    });
-    x.fatti.forEach(f=>{h+=`<div style="font-size:var(--fs-xxs);color:var(--green);margin-top:4px;padding-left:32px;">✓ ${esc(f)}</div>`;});
-    if(!x.passi.length&&!x.fatti.length)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;padding-left:32px;">Oggi niente da fare.</div>`;
-    h+=`</div>`;
-  });
-  h+=`<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
-      <button onclick="gbToggleGuida()" style="background:none;border:none;padding:0;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;cursor:pointer;">Come funziona il ciclo ${_gbGuida?'▴':'▾'}</button>
-      <div style="${_gbGuida?'':'display:none;'}font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.7;margin-top:6px;">
-        <strong>1.</strong> Ogni giorno le cameriere consegnano i fogli camera: i totali si inseriscono qui.<br>
-        <strong>2.</strong> Il pomeriggio prima del passaggio — ${esc(GB_GG_NOMI[1])}, ${esc(GB_GG_NOMI[3])} e ${esc(GB_GG_NOMI[5])} — si stampa la distinta dei sacchi che escono e si lascia in reception.<br>
-        <strong>3.</strong> ${_gbCalTxt().charAt(0).toUpperCase()+_gbCalTxt().slice(1)} alle 8 Raimondo ritira i sacchi e consegna il pulito: si registra quanto ha portato.<br>
-        <strong>4.</strong> Se ha portato meno del dovuto la differenza resta segnata, e il totale in fondo dice se la perdita è occasionale o continua.
-      </div>
-    </div>
-  </div>`;
-
-  // Selettore struttura
-  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-      ${Object.keys(GB_HOTELS).map(k=>`<button onclick="gbSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;background:${k===_gbHotel?'var(--accent)':'var(--surface)'};color:${k===_gbHotel?'#fff':'var(--text-dim)'};">${esc(GB_HOTELS[k])}</button>`).join('')}
-    </div>
-  </div>`;
+  const passi=[];
+  perH.forEach(x=>x.passi.forEach(p=>passi.push(x.k===_gbHotel?p:{...p,t:(GB_STO_NOMI[x.k]||GB_HOTELS[x.k])+' · '+p.t,vai:x.k})));
+  // L'avviso dei dati mancanti resta IN CIMA (07/11/2026), sopra la testata, ma solo quando manca
+  // qualcosa: «archivio completo» lo dice già il riquadro «Giorni senza consumi».
+  if(Object.keys(GB_HOTELS).some(k=>_gbNBuchi(_gbBuchi(k,oggi))))h+=_gbBoxBuchi(oggi);
+  h+=_gbTesta(oggi,passi,giornoGiro,vigilia);
 
   // ── Consumi del giorno ──
   // La data scelta va riletta dal campo prima di rigenerare l'HTML: riscrivendo sempre
@@ -1873,7 +2009,7 @@ function _gbRenderCore(){
   const consSel=_gb.consumi.find(c=>_gbH(c)===_gbHotel&&c.data===consData);
   if(_gbRiscrivi.k&&_gbRiscrivi.k!==_gbHotel+'|'+consData)_gbRiscrivi={k:'',voci:{},msg:[]};
   const rsc=_gbRiscrivi.voci;
-  h+=`<div class="panel" style="margin-bottom:16px;">
+  h+=`<div id="gb-a-consumi"></div><div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">Consumi giornalieri dai fogli camera</span>
       <button onclick="gbToggleUltimi()" style="margin-left:auto;background:${_gbUltimiAperti?'var(--accent)':'var(--surface)'};color:${_gbUltimiAperti?'#fff':'var(--accent)'};border:1px solid ${_gbUltimiAperti?'var(--accent)':'var(--border)'};padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">Ultimi consumi inseriti ${_gbUltimiAperti?'▴':'▾'}</button>
     </div>
@@ -1882,7 +2018,7 @@ function _gbRenderCore(){
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
         ${_gbFreccia('consumi',-1)}<input type="date" id="gb-cons-data" data-h="${_gbHotel}" value="${consIso}" max="${_gbToIso(_gbFmt(oggi))}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_gbFreccia('consumi',1,consIso>=_gbToIso(_gbFmt(oggi)))}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px;">
         ${GB_VOCI.map((v,i)=>`<div>
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
           <input type="number" min="0" id="gb-c-${i}" value="${v in rsc?'':(consSel?(Number(consSel.q[v])||0):0)}" ${v in rsc?'placeholder="riscrivi"':''} onfocus="this.select()" style="width:100%;padding:7px 9px;border:${v in rsc?'2px solid var(--red)':'1px solid var(--border)'};border-radius:6px;font-size:var(--fs-sm);text-align:center;">
@@ -1926,7 +2062,7 @@ function _gbRenderCore(){
 
   // ── La consegna del pulito ──
   const giroDate=_gbParse(giroData);
-  h+=`<div class="panel" style="margin-bottom:16px;">
+  h+=`<div id="gb-a-consegna"></div><div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">${'Consegna biancheria pulita'+(giroDate?' · '+GB_GG_NOMI[giroDate.getDay()]+' '+_gbFmt(giroDate).slice(0,5):'')}</span>
       ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>':''}
     </div>
@@ -2078,7 +2214,8 @@ function _gbRenderCore(){
   }
 
 
-  el.innerHTML=h;
+  h+=`<div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Raimondo passa ${_gbCalTxt()}: ritira lo sporco dei giorni dal passaggio precedente fino al giorno prima, e porta lo stesso numero di pezzi puliti. Se ne porta meno, la differenza resta nei «pezzi non rientrati».</span></div>`;
+  el.innerHTML='<div class="inv5-cornice bia5">'+h+'</div>';
 }
 
 // Distinta di consegna A4 — il documento che oggi manca. Senza id stampa il giro

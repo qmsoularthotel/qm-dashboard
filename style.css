@@ -1498,3 +1498,22 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 }
 .rev5-scad:empty{display:none;}
 .rev5-lista .rev-card-header{flex-wrap:wrap;}
+/* Consumo Biancheria nella composizione della Registration Cards (28/11/2026, QM: «va bene procedi»):
+   testata nuova (_biaTesta: riga oro, titolo-verdetto, «Cosa fare oggi», prossimo passaggio di
+   Raimondo col foglio della distinta, tre riquadri) e sotto i riquadri di lavoro di sempre, nello
+   stesso ordine, ridisegnati come riquadri bianchi della cornice. Copiato identico in Compass OPS
+   (prefisso gb5-… → stesso nome: le classi bia5-* restano bia5-* anche là, vedi compass-ops.html). */
+.bia5 .panel{border:1px solid var(--border-light);border-radius:12px;box-shadow:none;margin-bottom:14px!important;overflow:hidden;}
+.bia5 .panel-header{background:none;border-bottom:none;padding:14px 16px 4px;}
+.bia5 .panel-title{font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.07em;}
+.bia5 .panel-body{padding-top:8px!important;}
+.bia5 .inv5-passi{margin-bottom:14px;}
+.bia5-griglia .inv5-foglio{flex:0 0 auto;}
+.bia5-voce{cursor:pointer;}
+.bia5-voce:hover .inv5-vt{color:var(--accent);text-decoration:underline dotted;}
+.bia5-link{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;}
+.bia5-guida{font-size:12px;color:var(--text-muted);line-height:1.7;margin-top:6px;}
+.bia5-seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-wrap:wrap;}
+.bia5-seg button{border:none;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text-muted);font-family:inherit;}
+.bia5-seg button.on{background:var(--accent);color:#fff;}
+.bia5>.inv5-fascia{margin-top:0;}
