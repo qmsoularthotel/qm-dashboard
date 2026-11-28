@@ -653,3 +653,9 @@ giorno. Copia identica nella Galleria (`_gtBlocchi`, `_gtConsuntivo`, confrontat
 10/10 riposo = **una** richiesta, che nell'elenco si legge «RIPOSO + FERIE». In `_tpBlocchi` ogni
 preferenza con FERIE o RIPOSO vale come «giorno libero»; le richieste di turno (apertura, chiusura…)
 restano per tipo, quindi chiusura e riposo di fila sono ancora due.
+
+## Turno di oggi senza la ditta (28/11/2026, QM)
+
+La ditta esterna che pulisce le camere 200 della Boutique («Ditta», «Ditta Maria»…, `_turnoDitta`)
+non compare nel Turno di oggi (Overview e specchio in Turnazione Corrente, stesso `renderDay`): né in
+Housekeeping né in «Non in servizio». Resta nel turno salvato, nell'archivio e nelle statistiche.

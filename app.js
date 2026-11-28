@@ -42,6 +42,8 @@ const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 // Lavoratrici extra dell'Housekeeping (QM, 28/11/2026): quando non sono in turno la loro casella
 // nel planning è bianca. Non sono «a riposo»: non vanno nella striscia «Non in servizio».
 const TURNI_EXTRA_HK=['Anushka','Roberta'];
+// La ditta esterna della Boutique («Ditta», «Ditta Maria»…): fuori dal Turno di oggi (QM, 28/11/2026).
+const _turnoDitta=n=>/^ditta\b/i.test(String(n||'').trim());
 const _turnoExtraHK=n=>TURNI_EXTRA_HK.some(x=>x.toLowerCase()===String(n||'').trim().toLowerCase());
 let weekData=null,activeDay=0;
 const IS_REST=v=>{
@@ -1134,7 +1136,7 @@ function renderDay(idx){
   const nonServizio=[
     ...ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n))&&!IS_DASH(getShift(shifts,n))),
     ...extraNames.filter(n=>IS_REST(getShift(shifts,n))&&!IS_DASH(getShift(shifts,n)))
-  ].filter(n=>!_turnoExtraHK(n));
+  ].filter(n=>!_turnoExtraHK(n)&&!_turnoDitta(n));
   // Motivo dell'assenza per differenziare la striscia "Non in servizio" — riposo è normale
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
   function _absenceReason(v){
@@ -1189,7 +1191,8 @@ function renderDay(idx){
         return!allStaffLow.has(nl);
       });
     }
-    const showMembers=sortDeptMembers(key,[...inT,...extras],shifts);
+    // La ditta esterna (camere 200 della Boutique) non si mostra nel Turno di oggi (QM, 28/11/2026).
+    const showMembers=sortDeptMembers(key,[...inT,...extras].filter(n=>!_turnoDitta(n)),shifts);
     if(!showMembers.length){
       // Manutenzione resta sempre visibile anche a riposo/ferie — un solo addetto
       // (Basile G.), sparire del tutto dava l'impressione di un dato mancante.

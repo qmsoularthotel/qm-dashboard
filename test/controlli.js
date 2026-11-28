@@ -4924,3 +4924,18 @@ sez('Preferenze: richieste di fila contano una volta (28/11/2026)');
   ok('nel riepilogo: 2 richieste nei tre mesi, non 5', c.righe[0].tot, 2);
   ok('e 1 nella settimana prossima, non 2',         c.righe[0].sett, 1);
 })();
+
+// ── Turno di oggi (28/11/2026, QM): la ditta della Boutique non compare ──
+sez('Turno di oggi: senza la ditta (28/11/2026)');
+if (typeof renderDay === 'function') (function () {
+  var box = { innerHTML: '' }, vq = document.querySelectorAll, wd = weekData, tv = _turnoVista;
+  document.querySelectorAll = function (q) { return q === '.staff-area-mirror' ? [box] : vq.call(document, q); };
+  try {
+    _turnoVista = null;
+    weekData = _turniSenzaEsclusi({ giorni: [{ label: 'Lun 30/11', date: '2026-11-30', shifts: {
+      'Matarese A.': 'SOUL', 'EXTRA': '200', 'Extra Maria': 'R', 'Presta P.': 'AC' } }] });
+    renderDay(0);
+    ok('la ditta non è in Housekeeping',            /Ditta/.test(box.innerHTML), false);
+    ok('Matarese sì',                               /Matarese/.test(box.innerHTML), true);
+  } finally { document.querySelectorAll = vq; weekData = wd; _turnoVista = tv; }
+})();
