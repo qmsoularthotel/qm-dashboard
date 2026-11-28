@@ -417,6 +417,18 @@ altrimenti si torna a oggi (`findTodayIdx`). I valori vecchi (un numero) non val
 Controllo in `test/esegui.sh` (le due copie identiche, sei casi provati con Node o osascript),
 verificato togliendo il controllo del giorno.
 
+### Schede uguali a Compass (28/11/2026, QM)
+
+Le card della lista (`buildPreview`) sono le stesse schede della Registration Cards di Compass
+(`.rc5-card`, CSS **copiato** nella pagina perché non carica style.css; qui `--text-dim` e `--text-muted`
+sono scambiati): bianche con ombra leggera, camera grande in etichetta chiara, soggiorno su una riga,
+«Tocca per l'anteprima» e Stampa in fondo; tre per riga. Prima: testa blu scura con la camera nella
+pastiglia oro, scartata in Compass come «troppo pesante». **Due differenze volute**: niente striscia
+«Nuova»/«Spostata» (non c'è un caricamento precedente con cui confrontare: il PDF si legge sul computer e
+basta) e niente divisione per struttura (il PDF arrivi non dice a quale struttura appartiene la camera, e
+non c'è un elenco camere → struttura della Galleria: dividere sarebbe indovinare). Cambiando le schede di
+Compass, si ricopiano qui.
+
 ## Registration Cards nel Pannello App (23/11/2026)
 
 Richiesta del QM: *"inseriscimela nel pannello app di Compass, attivarla e disattivarla da
