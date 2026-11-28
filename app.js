@@ -5098,8 +5098,87 @@ function _renderRoomDivision(idx){
   // vuole sapere come sistemare mercoledì, non la settimana in generale.
   try{sugg=renderHkSuggestions(idx);}catch(e){sugg='';}
   let avviso='';try{avviso=_hkAvvisoHtml();}catch(e){}
-  el.innerHTML=`${avviso}${mHtml}${sugg}${monthlyHtml}`;
+  // Versione nuova IN PROVA (QM, 28/11/2026: «non mi fido» → «fammi provare senza rischi»): solo sul
+  // browser dove è accesa (_rdProvaOn), gli altri vedono questa. Stessi dati, stessi suggerimenti.
+  const vista=document.getElementById('view-room-division');
+  const prova=_rdProvaOn();
+  if(vista)vista.classList.toggle('rd5',prova);
+  if(prova){
+    let h5='';
+    try{h5=_rdProvaHtml(giorno,m,a,idx,avviso,sugg,monthlyHtml);}catch(e){console.error('[Bilanciamento prova]',e);h5='';}
+    if(h5){el.innerHTML=h5;if(document.getElementById('hk-week-chart'))renderHkWeekChart(idx);return;}
+  }
+  el.innerHTML=`${_rdProvaInterruttore(false)}${avviso}${mHtml}${sugg}${monthlyHtml}`;
   if(mCard||aCard)renderHkWeekChart(idx);
+}
+// ── Bilanciamento Camere: versione nuova in prova (28/11/2026) ─────────────────────────────
+// Si accende e si spegne per browser (preferenza di chi guarda, non un dato: localStorage).
+// Spenta, la pagina è esattamente quella di prima; accesa, cambia solo il disegno.
+function _rdProvaOn(){try{return localStorage.getItem('qm_rd_prova')==='1';}catch(e){return false;}}
+function rdProva(on){
+  try{if(on)localStorage.setItem('qm_rd_prova','1');else localStorage.removeItem('qm_rd_prova');}catch(e){}
+  try{renderRoomDivision(pianoNavIdx!==null&&pianoNavIdx!==undefined?pianoNavIdx:0);}catch(e){}
+}
+function _rdProvaInterruttore(on){
+  return on
+    ?`<div class="rd5-prova"><span><b>Stai provando la versione nuova</b> · solo su questo computer: gli altri vedono quella di sempre.</span><button onclick="rdProva(false)">Torna alla versione di prima</button></div>`
+    :`<div style="display:flex;justify-content:flex-end;margin:-4px 0 10px;"><button onclick="rdProva(true)" style="background:none;border:1px dashed var(--gold);color:#8a5a00;border-radius:8px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">Prova la versione nuova · solo su questo computer</button></div>`;
+}
+function _rdProvaHtml(giorno,m,a,idx,avviso,sugg,monthlyHtml){
+  const ord=arr=>[...(arr||[])].sort((x,y)=>(parseInt(String(x).replace(/\D/g,''))||0)-(parseInt(String(y).replace(/\D/g,''))||0));
+  const num=v=>v.toLocaleString('it-IT',{minimumFractionDigits:v%1?1:0,maximumFractionDigits:1});
+  const col=(nome,iniz,r)=>{
+    const part=ord(r.partenze),cam=ord(r.cambi),ferm=ord(r.fermate);
+    const nP=part.length+cam.length;
+    const car=hkCarico({partenze:part,cambi:cam,fermate:ferm});
+    const chip=(x,cls)=>`<span class="rd5-ch ${cls}">${_esc(x)}${cls.includes('c')?' ⇄':''}</span>`;
+    return`<div class="rd5-col"><div class="rd5-chi"><span class="inv5-num">${iniz}</span><div><b>${nome}</b><small>${nP} ${nP===1?'partenza':'partenze'} · ${ferm.length} ${ferm.length===1?'fermata':'fermate'}</small></div><div class="rd5-car">carico<span>${num(car)}</span></div></div>
+      ${nP?`<div class="rd5-sub">Partenze</div>${part.map(x=>chip(x,'p')).join('')}${cam.map(x=>chip(x,'p c')).join('')}`:''}
+      ${ferm.length?`<div class="rd5-sub">Fermate</div>${ferm.map(x=>chip(x,'')).join('')}`:''}
+      ${!nP&&!ferm.length?'<div class="inv5-gs" style="margin-top:10px">Niente da fare questo giorno.</div>':''}</div>`;
+  };
+  // Totali della settimana: stesso conto di renderHkWeekViewContainer.
+  let pM=0,fM=0,pA=0,fA=0;
+  pianoData.giorni.forEach(g=>{const s=_hkSplitConLiborio(g);pM+=(s.m.partenze||[]).length+(s.m.cambi||[]).length;fM+=(s.m.fermate||[]).length;pA+=(s.a.partenze||[]).length+(s.a.cambi||[]).length;fA+=(s.a.fermate||[]).length;});
+  const diff=(pM+fM)-(pA+fA);
+  const verd=diff===0?'Settimana bilanciata':(diff>0?`Settimana: Matarese +${diff} rispetto ad Altre`:`Settimana: Altre +${-diff} rispetto a Matarese`);
+  const verdBreve=diff===0?'Bilanciato':(diff>0?`Matarese +${diff}`:`Altre +${-diff}`);
+  const verdCol=Math.abs(diff)<=2?'var(--green)':'var(--amber)';
+  let mese='';
+  try{const t=_hkMeseTotali();if(t&&(t.n||t.prev)){
+    const sc=t.M-t.A,dm=iso=>{const q=iso.split('-');return(+q[2])+'/'+(+q[1]);};
+    mese=`<div class="rd5-r"><span>Partenze di ${_esc(t.nome)}</span><b>${t.M} · ${t.A}</b></div>
+      <div class="rd5-ver" style="color:${Math.abs(sc)<=2?'var(--green)':'var(--amber)'};font-size:14px">${sc===0?'In pari nel mese':(sc>0?`Matarese +${sc} nel mese`:`Altre +${-sc} nel mese`)}</div>
+      ${t.n?`<div class="rd5-mini"><span>${t.n===1?'passato '+dm(t.dal):'passati '+dm(t.dal)+'–'+dm(t.alPass)}</span><span>${t.Mp} · ${t.Ap}</span></div>`:''}
+      ${t.prev?`<div class="rd5-mini"><span>previsti nel Piano ${dm(t.dalPrev)}–${dm(t.al)}</span><span>${t.M-t.Mp} · ${t.A-t.Ap}</span></div>`:''}`;
+  }}catch(e){}
+  const oggiTxt=(()=>{const d=new Date();return['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'][d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1);})();
+  return`${_rdProvaInterruttore(true)}<div class="inv5-cornice rd5-c">
+    <div class="inv5-hero"><div><div class="inv5-k">SoulArt Hotel · Suddivisione cameriere · ${_esc(oggiTxt)}</div><div class="inv5-t">${_esc(verd)}</div></div>
+      <div class="rd5-nav"><button onclick="pianoPrevDay()" aria-label="Giorno prima">‹</button><span>${_esc(giorno.label||'—')}</span><button onclick="pianoNextDay()" aria-label="Giorno dopo">›</button></div></div>
+    ${avviso}
+    <div class="inv5-griglia">
+      <div class="inv5-grande"><div class="inv5-gl">Il giorno · chi fa cosa</div>
+        <div class="rd5-due">${col('Matarese','M',m)}${col('Altre housekeeper','A',a)}</div>
+        <div class="rd5-leg">Azzurrine le partenze, bianche le fermate · ⇄ <i></i> cambio: nello stesso giorno parte uno e arriva un altro</div>
+      </div>
+      <div class="inv5-lato"><div class="inv5-ll">Totale settimana</div>
+        <div class="rd5-rh">Matarese · Altre</div>
+        <div class="rd5-r"><span>Partenze</span><b>${pM} · ${pA}</b></div>
+        <div class="rd5-r"><span>Fermate</span><b>${fM} · ${fA}</b></div>
+        <div class="rd5-r"><span>Totali</span><b>${pM+fM} · ${pA+fA}</b></div>
+        <div class="rd5-ver" style="color:${verdCol}">${_esc(verdBreve)}</div>
+        ${mese}
+        <button class="btn-ghost inv5-crea rd5-b" onclick="setView('hkpsheet')">Operativa HKP SoulArt</button>
+      </div>
+    </div>
+    <div class="rd5-box"><div class="rd5-bh"><div class="inv5-ll">Vista settimanale · carico pesato</div></div>
+      <div class="rd5-nota">Il numero sopra la colonna è il carico, non le camere: una partenza pesa 2 e una fermata 1 (2,5 e 1,5 per Art 1, 2, 3, 8, 9, 13).</div>
+      <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:260px;display:flex;flex-direction:column;"></div></div>
+    ${sugg?`<div class="rd5-box rd5-vecchio">${sugg}</div>`:''}
+    ${monthlyHtml?`<div class="rd5-box rd5-vecchio">${monthlyHtml}</div>`:''}
+    <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Le camere si spostano nel PMS, poi si ricarica il Piano: il bilanciamento si aggiorna da solo.</span></div>
+  </div>`;
 }
 
 // Box "Distribuzione Culligan" — accanto al grafico occupazione in Piano del giorno.

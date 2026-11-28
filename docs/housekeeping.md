@@ -521,3 +521,20 @@ Perché ci stiano, le colonne dei giorni di `hkpNRenderGrid` non sono più fisse
 `max(42, larghezza+6)` — es. AM/LC 51 px, AM/ANT 63 px; senza doppie resta 42. Una doppia più lunga
 scritta adesso allarga la colonna al prossimo ridisegno della griglia. Guida di stile aggiornata
 (esempio AM/LC a 13 px). Controlli in `test/controlli.js`.
+
+### Versione nuova IN PROVA (28/11/2026, QM: «non mi fido» → «fammi provare senza rischi»)
+
+Due proposte del nuovo stile (composizione della Registration Cards) non hanno convinto il QM, che
+non si fidava a cambiare una pagina usata ogni giorno. Soluzione: la versione nuova esiste **accanto**
+a quella di sempre e si accende **per browser** (`qm_rd_prova` in localStorage: una preferenza di chi
+guarda, non un dato). Spenta: `_renderRoomDivision` disegna esattamente la pagina di prima, con in più
+il pulsante tratteggiato «Prova la versione nuova · solo su questo computer» (`_rdProvaInterruttore`).
+Accesa (`rdProva(true)`): `_rdProvaHtml` disegna riga oro e titolo-verdetto della settimana, «Il giorno ·
+chi fa cosa» (Matarese e Altre affiancate, carico grande, camere in etichette chiare: azzurrine le
+partenze, bianche le fermate, ⇄ col pallino rosso sui cambi), «Totale settimana» (stesso conto di
+`renderHkWeekViewContainer`, partenze del mese da `_hkMeseTotali`), il grafico di sempre
+(`renderHkWeekChart` nel suo `#hk-week-chart`), poi **i suggerimenti e i riepiloghi mensili di sempre**
+dentro riquadri bianchi (`.rd5-vecchio`). La vista prende la classe `rd5` (via la cornice del pannello).
+Fascia gialla in cima con «Torna alla versione di prima». Se `_rdProvaHtml` fallisce si disegna la
+pagina di sempre. Controlli: «Bilanciamento Camere: la versione nuova è solo una prova». **Quando il QM
+decide**: o si tiene la nuova (si toglie la vecchia e l'interruttore) o si toglie tutto `rd5`.
