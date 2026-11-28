@@ -3605,8 +3605,13 @@ function pianoRenderWeek(activeIdx){
   // da una qualunque delle due e si accende in entrambe.
   const _n=a=>(a&&a.length)||0;
   const _conta=(hs,g)=>hs.reduce((t,h)=>{const x=g[h]||{};t.f+=_n(x.fermate);t.p+=_n(x.partenze)+_n(x.cambi);return t;},{f:0,p:0});
-  const _striscia=(titolo,hs)=>`<div class="pw-sez"><div class="pw-sez-t">${titolo}</div><div class="pw-riga">${pianoData.giorni.map((g,i)=>{
+  // San Liborio dentro la striscia del SoulArt (QM, 28/11/2026): quante fermate e partenze sono sue,
+  // solo quando ce ne sono: pastiglia oro «SL 2» accanto al numero. Senza, resta lo spazio vuoto
+  // (.vuoto), così su smartphone i giorni della striscia restano allineati.
+  const _sl=(n,t)=>n?`<span class="pw-sl" title="${n} ${t} a San Liborio">SL ${n}</span>`:'<span class="pw-sl vuoto" aria-hidden="true">SL 0</span>';
+  const _striscia=(titolo,hs,conSL)=>`<div class="pw-sez"><div class="pw-sez-t">${titolo}</div><div class="pw-riga">${pianoData.giorni.map((g,i)=>{
     const c=_conta(hs,g);
+    const sl=conSL?_conta(['liborio'],g):{f:0,p:0};
     const parts=g.label?g.label.split(' '):['?'];
     const dayName=_esc(parts[0].substring(0,3));
     const dayDate=_esc(parts[1]||'');
@@ -3614,11 +3619,11 @@ function pianoRenderWeek(activeIdx){
     return`<div onclick="pianoNavRender(${i})" class="pw-day${i===activeIdx?' on':''}" title="${_esc(g.label||'')}">
       <div class="pw-k">${oggi?'Oggi':''}</div>
       <div class="pw-g">${dayName}<span class="pw-d">${dayDate}</span></div>
-      <div class="pw-r">${_cerchio(c.f,'','fermate')}<span class="pw-l">fermate</span></div>
-      <div class="pw-r">${_cerchio(c.p,'part','partenze e cambi')}<span class="pw-l">partenze</span></div>
+      <div class="pw-r">${_cerchio(c.f,'','fermate')}<span class="pw-l">fermate</span>${conSL?_sl(sl.f,'fermate'):''}</div>
+      <div class="pw-r">${_cerchio(c.p,'part','partenze e cambi')}<span class="pw-l">partenze</span>${conSL?_sl(sl.p,'partenze e cambi'):''}</div>
       <div class="pw-t"><span class="pw-tl">Tot</span><span class="pw-tv">${c.f+c.p}</span></div>
     </div>`;}).join('')}</div></div>`;
-  row.innerHTML=_striscia('SoulArt Hotel · Art Suite San Liborio',['soulart','liborio'])+_striscia('Boutique Hotel',['boutique']);
+  row.innerHTML=_striscia('SoulArt Hotel · Art Suite San Liborio',['soulart','liborio'],true)+_striscia('Boutique Hotel',['boutique']);
 }
 
 // pianoRenderWeek decide la disposizione (cifre affiancate su desktop, impilate su
