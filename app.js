@@ -19678,7 +19678,7 @@ function _agRiga(t,conGiorno){
   return `<div class="ag-task${t.fatto?' ag-fatto':''}${ritardo&&!conGiorno?' ag-ritardo':''}" data-id="${id}">
     ${maniglia}<input type="checkbox" class="ag-check" ${t.fatto?'checked':''} onchange="agSpunta('${id}')" title="Fatto">
     <div class="ag-testo" onclick="agModifica('${id}')" title="Tocca per correggere">
-      ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${_esc(t.testo)}${pillole?`<span class="ag-sotto">${pillole}</span>`:''}
+      ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}<span class="ag-tt">${_esc(t.testo)}</span>${pillole?`<span class="ag-sotto">${pillole}</span>`:''}
     </div>
     <button class="ag-ico ag-ico-altro" onclick="agMenu(event,'${id}')" title="Altro" aria-haspopup="menu">${_agIcoAltro()}</button>
     ${_agMenuAperto===t.id?`<div class="ag-menu" role="menu">
@@ -19694,7 +19694,7 @@ function _agTraccia(t){
   const dove=t.giorno===oggi?'oggi':_agEtichettaLunga(t.giorno);
   return `<div class="ag-task ag-spostato" title="Era in programma qui">
     <span class="ag-spostato-ico">${_agIcoAvanti()}</span>
-    <div class="ag-testo"><span class="ag-quando ag-quando-lieve">${t.fatto?(t.giorno===oggi?'fatto oggi':'fatto il '+_esc(dove)):(t.giorno===oggi?'spostato a oggi':'spostato al '+_esc(dove))}</span>${_esc(t.testo)}</div>
+    <div class="ag-testo"><span class="ag-quando ag-quando-lieve">${t.fatto?(t.giorno===oggi?'fatto oggi':'fatto il '+_esc(dove)):(t.giorno===oggi?'spostato a oggi':'spostato al '+_esc(dove))}</span><span class="ag-tt">${_esc(t.testo)}</span></div>
   </div>`;
 }
 function agRender(){

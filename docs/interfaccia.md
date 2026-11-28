@@ -238,3 +238,12 @@ centra. Compass e le altre app tengono la firma comune.
 Nelle app con i nomi dei grigi scambiati la copia usa i nomi scambiati,
 così il colore è identico. Dentro Compass OPS la Registration nasconde la sua
 (`.rc-dentro .firma`). `esegui.sh` si ferma se una pagina `.html` non ha `class="firma"`.
+
+
+## Agenda: impegni in maiuscoletto (28/11/2026, QM)
+
+Il testo degli impegni (`.ag-tt`, in `_agRiga` e `_agTraccia`) e la casella in cui si scrivono
+(`.ag-testo-in`) si vedono in maiuscoletto comunque siano scritti. Solo aspetto: il testo salvato
+resta com'è. `font-variant-caps:all-small-caps` è stato provato e scartato: il carattere di Compass
+non ha un vero maiuscoletto e il browser lasciava alcune lettere minuscole; si usano maiuscole
+all'88% con un filo di spaziatura. Su smartphone la casella resta a 16px (iOS).
