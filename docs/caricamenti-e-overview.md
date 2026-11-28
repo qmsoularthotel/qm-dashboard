@@ -376,3 +376,5 @@ convince» — le cose che disturbavano erano «Lib», i colori e Oggi confuso c
 - **Colori dei cerchi tutti nel blu Compass** (QM, scelta «2» fra tre proposte): partenze col fondo
   azzurrino (`--accent-bg`) e bordo blu, fermate solo col bordo blu su fondo chiaro. Scartati: arancio
   le partenze/azzurro le fermate (quelli di prima) e cerchi grigi neutri.
+- **Cerchi sempre tondi** (QM: «uno è ovale, l'altro è tondo»): con due cifre il cerchio si allungava
+  (`min-width` + imbottitura). Ora `.pw-n` ha larghezza fissa uguale all'altezza (28px, 24px stretto).

@@ -1409,7 +1409,9 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .pw-g{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;}
 .pw-d{font-size:12px;font-weight:400;color:var(--text-muted);margin-left:5px;}
 .pw-r{display:flex;align-items:center;gap:6px;min-height:30px;}
-.pw-n{min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;position:relative;}
+/* Cerchi sempre tondi, anche con due cifre (QM, 28/11/2026: «uno è ovale, l'altro è tondo»): larghezza
+   fissa uguale all'altezza, niente imbottitura ai lati. */
+.pw-n{width:28px;height:28px;padding:0;border-radius:50%;letter-spacing:-.02em;background:var(--surface);border:1.5px solid var(--accent);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;position:relative;}
 .pw-lib{position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 1.5px var(--surface);}
 /* Colori dei cerchi tutti nel blu Compass (QM, 28/11/2026, scelta «2» fra tre): partenze col fondo
    azzurrino, fermate solo col bordo. Prima arancio le partenze e azzurro le fermate. */
@@ -1423,7 +1425,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
    QM l'Overview è più stretta della finestra e le scritte uscivano dal bordo). Solo nelle schede molto
    strette (smartphone) le scritte partenze/fermate lasciano il posto al solo cerchio. */
 .pw-day{container-type:inline-size;}
-@container (max-width:84px){.pw-n{min-width:24px;height:24px;padding:0 4px;font-size:12px;}.pw-r{gap:4px;}.pw-l{font-size:11px;}}
+@container (max-width:84px){.pw-n{width:24px;height:24px;font-size:12px;}.pw-r{gap:4px;}.pw-l{font-size:11px;}}
 @container (max-width:66px){.pw-l{display:none;}.pw-r{justify-content:center;}}
 @media (max-width:768px){
   .pw-riga{gap:3px;}
@@ -1433,7 +1435,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
   .pw-k{font-size:8px;letter-spacing:.03em;min-height:11px;line-height:11px;}
   .pw-g{font-size:12px;text-align:center;}
   .pw-d{display:block;margin:0;font-size:10px;}
-  .pw-n{min-width:24px;height:24px;padding:0 4px;font-size:11px;}
+  .pw-n{width:24px;height:24px;font-size:11px;}
   .pw-t{justify-content:center;gap:3px;padding-top:4px;align-self:stretch;}
   .pw-tl{font-size:8px;}
   .pw-tv{font-size:12px;}
