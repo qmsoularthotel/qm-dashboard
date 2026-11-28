@@ -619,3 +619,20 @@ dove sta la linguetta. Negli altri mesi il calendario resta com'era. Controlli i
   servizio» né nel conteggio della sidebar. Compaiono solo quando hanno un turno (in Housekeeping).
 - Controlli: «Turno: Abdelrahim reception, Battaglia colazione…» in `test/controlli.js`, provati
   rompendo il codice; la copia della Galleria è confrontata in `test/galleria.js`.
+
+## Turno di oggi: settimana successiva e colori (28/11/2026, QM)
+
+- **Planning della settimana dopo caricato in anticipo**: prima il «Turno di oggi», non trovando
+  la data di oggi, prendeva lo stesso giorno della settimana dopo (sabato 28/11 → sabato 05/12).
+  Ora `loadWeekData` fa come per le settimane passate: se il planning è futuro (`_turnoFuturo`)
+  resta sulla settimana in corso presa dall'archivio.
+- **Pulsante «Settimana dopo ›»** in fondo ai giorni, solo se la settimana successiva è
+  nell'archivio (`_turnoSettimanaDopo`). Apre quella settimana in `_turnoVista` (col suo giorno
+  `_turnoVistaGiorno`) senza toccare `weekData`: il turno del QM, l'Agenda e il polling restano
+  su oggi. «‹ Questa settimana» torna indietro; un nuovo caricamento torna alla settimana in corso.
+  Le correzioni a mano (`editShift`) valgono per la settimana mostrata e finiscono anche
+  nell'archivio (`turniArchivia`).
+- **Colori di «Non in servizio»**: Riposo **rosso** (`--red`), Ferie **arancio** (`--amber`),
+  Malattia **blu** (`--blue`), per non confondersi col riposo. La riga dei giorni va a capo su
+  smartphone.
+- Controlli: «Turno di oggi: settimana successiva e colori» in `test/controlli.js`.

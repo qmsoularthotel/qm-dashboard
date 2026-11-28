@@ -4863,3 +4863,37 @@ if (typeof renderDay === 'function') (function () {
     ok('Roberta in turno compare in Housekeeping', /Roberta/.test(box.innerHTML.split('staff-dept-card').filter(function (c) { return c.indexOf('>Housekeeping<') >= 0; })[0] || ''), true);
   } finally { document.querySelectorAll = vq; weekData = wd; }
 })();
+
+// ── Turno di oggi (28/11/2026, QM): settimana successiva già caricata, colori di riposo e ferie ──
+sez('Turno di oggi: settimana successiva e colori (28/11/2026)');
+ok('settimana che non è ancora cominciata',         _turnoFuturo([{ date: '2026-11-30' }], new Date('2026-11-28T10:00:00')) + ' / ' + _turnoFuturo([{ date: '2026-11-23' }], new Date('2026-11-28T10:00:00')), 'true / false');
+if (typeof renderDay === 'function') (function () {
+  var box = { innerHTML: '' }, vq = document.querySelectorAll, wd = weekData, prima = null;
+  try { prima = localStorage.getItem(TURNI_STORICO_KEY); } catch (e) {}
+  document.querySelectorAll = function (q) { return q === '.staff-area-mirror' ? [box] : vq.call(document, q); };
+  var sett = function (lun, presta) { var gg = []; for (var i = 0; i < 7; i++) { var d = new Date(lun + 'T12:00:00'); d.setDate(d.getDate() + i);
+    gg.push({ data: _turnoIso(d), shifts: { 'Presta P.': i === 0 ? presta : 'AC', 'Rossi T.': 'FERIE', 'Bianchi L.': 'MALATTIA' } }); } return gg; };
+  try {
+    localStorage.setItem(TURNI_STORICO_KEY, JSON.stringify({
+      '2026-11-23': { dal: '2026-11-23', al: '2026-11-29', ts: 1, giorni: sett('2026-11-23', 'R') },
+      '2026-11-30': { dal: '2026-11-30', al: '2026-12-06', ts: 2, giorni: sett('2026-11-30', 'CC') } }));
+    weekData = _turnoCorrenteDaArchivio(new Date('2026-11-25T12:00:00')); _turnoVista = null;
+    renderDay(0);
+    ok('c\'è il pulsante per la settimana dopo',      /turnoSettimanaDopo\(true\)/.test(box.innerHTML), true);
+    ok('riposo in rosso',                             /var\(--red-bg\);color:var\(--red\);">Riposo</.test(box.innerHTML), true);
+    ok('ferie in arancio',                            /var\(--amber-bg\);color:var\(--amber\);">Ferie</.test(box.innerHTML), true);
+    ok('malattia non è rossa come il riposo',         /var\(--red\);">Malattia</.test(box.innerHTML), false);
+    turnoSettimanaDopo(true);
+    ok('si passa alla settimana dopo',                /Lun 30\/11/.test(box.innerHTML) && /CC</.test(box.innerHTML), true);
+    ok('e si torna a questa',                         /turnoSettimanaDopo\(false\)/.test(box.innerHTML), true);
+    ok('weekData resta la settimana di oggi',         _turnoIso(weekData.giorni[0].date), '2026-11-23');
+    turnoSettimanaDopo(false);
+    ok('tornati alla settimana in corso',             /Lun 23\/11/.test(box.innerHTML) && _turnoVista === null, true);
+    weekData = _turnoCorrenteDaArchivio(new Date('2026-12-02T12:00:00')); renderDay(0);
+    ok('senza la settimana dopo, niente pulsante',    /turnoSettimanaDopo\(true\)/.test(box.innerHTML), false);
+  } finally {
+    document.querySelectorAll = vq; weekData = wd; _turnoVista = null;
+    try { if (prima === null) localStorage.removeItem(TURNI_STORICO_KEY); else localStorage.setItem(TURNI_STORICO_KEY, prima); } catch (e) {}
+  }
+})();
+ok('caricata la settimana dopo, resta quella in corso', /else if\(_turnoFuturo\(data\.giorni\)\)\{const cur=_turnoCorrenteDaArchivio\(\);/.test(String(loadWeekData)), true);

@@ -952,6 +952,32 @@ function _turnoPassato(giorni,oggi){
   const o=oggi?new Date(oggi):new Date();o.setHours(0,0,0,0);d.setHours(23,59,0,0);
   return d<o;
 }
+// Settimana non ancora cominciata: il primo giorno è dopo oggi (28/11/2026, planning caricati in anticipo).
+function _turnoFuturo(giorni,oggi){
+  const g=(giorni||[])[0];if(!g||!g.date)return false;
+  const d=g.date instanceof Date?new Date(g.date):new Date(typeof g.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(g.date)?g.date+'T12:00:00':g.date);
+  if(isNaN(d))return false;
+  const o=oggi?new Date(oggi):new Date();o.setHours(23,59,0,0);d.setHours(12,0,0,0);
+  return d>o;
+}
+// «Turno di oggi»: la settimana successiva, se il suo turno è già caricato (28/11/2026, QM).
+// _turnoVista è la settimana mostrata al posto di weekData (null = quella in corso); weekData
+// resta la settimana di oggi, così il turno del QM, l'Agenda e il polling non si spostano.
+let _turnoVista=null,_turnoVistaGiorno=0;
+function _turnoSettimanaDopo(){
+  if(!weekData||!weekData.giorni||!weekData.giorni.length)return null;
+  const g=weekData.giorni[0],d=g.date instanceof Date?new Date(g.date):new Date(typeof g.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(g.date)?g.date+'T12:00:00':g.date);
+  if(isNaN(d))return null;
+  d.setDate(d.getDate()+7);
+  const w=_turnoCorrenteDaArchivio(d);
+  return w?_turniSenzaEsclusi(w):null;
+}
+function turnoSettimanaDopo(si){
+  if(si){const w=_turnoSettimanaDopo();if(!w)return;_turnoVista=w;_turnoVistaGiorno=0;}
+  else _turnoVista=null;
+  renderDay(activeDay);
+}
+function turnoVistaGiorno(i){_turnoVistaGiorno=i;renderDay(activeDay);}
 // La settimana che contiene oggi, presa dall'archivio, nella forma di weekData (o null).
 function _turnoCorrenteDaArchivio(oggi){
   const o=oggi?new Date(oggi):new Date();o.setHours(12,0,0,0);
@@ -967,7 +993,12 @@ function loadWeekData(data){
   // Planning di una settimana passata: archiviato qui sopra; la Turnazione corrente resta sulla
   // settimana in corso, se è nell'archivio (21/11/2026).
   if(_turnoPassato(data.giorni)){const cur=_turnoCorrenteDaArchivio();if(cur){_turniSenzaEsclusi(cur);data=cur;}}
+  // Planning della settimana DOPO caricato in anticipo (28/11/2026): il «Turno di oggi» resta
+  // sulla settimana in corso, se è nell'archivio. Prima, non trovando oggi, prendeva lo stesso
+  // giorno della settimana dopo (sabato 28/11 → sabato 05/12). La successiva si apre col pulsante.
+  else if(_turnoFuturo(data.giorni)){const cur=_turnoCorrenteDaArchivio();if(cur){_turniSenzaEsclusi(cur);data=cur;}}
   weekData=data;
+  _turnoVista=null;
   // L'Agenda mostra il turno del QM in ogni giorno: arrivato un turno nuovo, si aggiorna (non sotto le dita).
   try{if(_qmVistaAttiva()==='agenda'&&!_qmOccupato())agRender();}catch(e){}
   const today=new Date();
@@ -1085,8 +1116,13 @@ const _nomeIniz=n=>{
 };
 
 function renderDay(idx){
-  const g=weekData.giorni[idx],shifts=g.shifts;
+  // Settimana successiva aperta: si mostra quella, col suo giorno; idx (activeDay) resta di weekData.
+  const W=_turnoVista||weekData;
+  if(_turnoVista){if(!(_turnoVistaGiorno>=0&&_turnoVistaGiorno<W.giorni.length))_turnoVistaGiorno=0;idx=_turnoVistaGiorno;}
+  const dopo=_turnoVista?null:_turnoSettimanaDopo();
+  const g=W.giorni[idx],shifts=g.shifts;
   updateStaffPanelHeader(g.date?(typeof g.date==='string'?new Date(g.date):g.date):null);
+  if(_turnoVista){const t=document.getElementById('staffPanelTitle');if(t)t.textContent='Turno della settimana successiva · '+_fmtDateLongIt(g.date instanceof Date?g.date:new Date(g.date));}
   // Indice case-insensitive dei nomi DEPTS per escluderli dagli extra
   const allStaffLow=new Set(ALL_STAFF.map(n=>n.toLowerCase()));
   const shiftsKeys=new Set(Object.keys(shifts).map(k=>k.toLowerCase()));
@@ -1103,16 +1139,19 @@ function renderDay(idx){
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
   function _absenceReason(v){
     const u=String(v||'').trim().toUpperCase();
-    if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO'].includes(u)||u.includes('RECUPER')||u.includes('RIPOSO')||/^R\b.*RICHIEST/.test(u)||/^REC\.?\s*RIP/.test(u))return{label:'Riposo',bg:'var(--surface2)',fg:'var(--text-dim)',ord:0};
-    if(u==='MALATTIA'||u.includes('MALATTIA'))return{label:'Malattia',bg:'var(--red-bg)',fg:'var(--red)',ord:1};
+    if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO'].includes(u)||u.includes('RECUPER')||u.includes('RIPOSO')||/^R\b.*RICHIEST/.test(u)||/^REC\.?\s*RIP/.test(u))return{label:'Riposo',bg:'var(--red-bg)',fg:'var(--red)',ord:0};
+    // Riposo rosso, ferie arancio (QM, 28/11/2026); la malattia passa al blu per non confondersi col riposo.
+    if(u==='MALATTIA'||u.includes('MALATTIA'))return{label:'Malattia',bg:'var(--blue-bg)',fg:'var(--blue)',ord:1};
     if(u==='FERIE'||u.includes('FERIE'))return{label:'Ferie',bg:'var(--amber-bg)',fg:'var(--amber)',ord:2};
     return{label:'',bg:'var(--surface2)',fg:'var(--text-dim)',ord:3};
   }
   const nonServizioSorted=[...nonServizio].sort((a,b)=>_absenceReason(getShift(shifts,a)).ord-_absenceReason(getShift(shifts,b)).ord);
   let html='';
-  html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-    <div style="display:flex;gap:2px;flex-shrink:0;">
-      ${weekData.giorni.map((wg,wi)=>`<button onclick="activeDay=${wi};renderDay(${wi});updateWeekNavActive();updateSidebarInfo();" class="wday-btn${wi===idx?' active':''}" style="flex:none;padding:3px 8px;">${wg.label.split(' ')[0].substring(0,3)}</button>`).join('')}
+  html+=`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+    <div style="display:flex;flex-wrap:wrap;gap:2px;min-width:0;">
+      ${_turnoVista?`<button onclick="turnoSettimanaDopo(false)" class="wday-btn" style="flex:none;padding:3px 8px;" title="Torna alla settimana in corso">‹ Questa settimana</button>`:''}
+      ${W.giorni.map((wg,wi)=>`<button onclick="${_turnoVista?`turnoVistaGiorno(${wi})`:`activeDay=${wi};renderDay(${wi});updateWeekNavActive();updateSidebarInfo();`}" class="wday-btn${wi===idx?' active':''}" style="flex:none;padding:3px 8px;">${wg.label.split(' ')[0].substring(0,3)}</button>`).join('')}
+      ${dopo?`<button onclick="turnoSettimanaDopo(true)" class="wday-btn" style="flex:none;padding:3px 8px;" title="Il turno della settimana successiva è già caricato">Settimana dopo ›</button>`:''}
     </div>
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">${g.label}</span>
   </div>`;
@@ -1170,22 +1209,27 @@ function renderDay(idx){
 // invece di dover duplicare la logica o richiamarla due volte.
 function _setStaffAreaHTML(html){document.querySelectorAll('.staff-area-mirror').forEach(el=>el.innerHTML=html);}
 async function editShift(dayIdx,nome){
-  if(!weekData||!weekData.giorni[dayIdx])return;
-  const shifts=weekData.giorni[dayIdx].shifts;
+  // Si corregge la settimana mostrata: quella in corso o la successiva (28/11/2026).
+  const W=_turnoVista||weekData;
+  if(!W||!W.giorni[dayIdx])return;
+  const shifts=W.giorni[dayIdx].shifts;
   // Trova la chiave reale (case-insensitive)
   const realKey=Object.keys(shifts).find(k=>k.toLowerCase()===nome.toLowerCase())||nome;
   const cur=shifts[realKey]||'';
   const nuovo=await cqChiedi('Correggere il turno di '+nome+'?',
-    _esc(weekData.giorni[dayIdx].label)+(cur?' · ora: <strong>'+_esc(cur)+'</strong>':''),
+    _esc(W.giorni[dayIdx].label)+(cur?' · ora: <strong>'+_esc(cur)+'</strong>':''),
     {etichetta:'Turno corretto',valore:cur});
   if(nuovo===null)return; // annullato
   // Durante l'attesa il turno può essere stato ricaricato: si scrive in quello attuale.
-  if(!weekData||!weekData.giorni[dayIdx])return;
-  weekData.giorni[dayIdx].shifts[realKey]=nuovo.trim();
+  const W2=_turnoVista||weekData;
+  if(W2!==W||!W2||!W2.giorni[dayIdx])return;
+  W.giorni[dayIdx].shifts[realKey]=nuovo.trim();
   // Salva in localStorage e cloud
-  const toSave={giorni:weekData.giorni.map(g=>({...g,date:g.date instanceof Date?g.date.toISOString():g.date})),_ts:Date.now()};
+  const toSave={giorni:W.giorni.map(g=>({...g,date:g.date instanceof Date?g.date.toISOString():g.date})),_ts:Date.now()};
   localStorage.setItem('qm_weekData',JSON.stringify(toSave));
   kvSet('qm_weekData',JSON.stringify(toSave));
+  // Anche nell'archivio: la settimana mostrata può venire da lì (in corso o successiva).
+  try{turniArchivia(W);}catch(e){}
   renderDay(dayIdx);
   updateSidebarInfo();
 }
