@@ -310,6 +310,25 @@ zona di trascinamento `#rcUploadZone` con `#rcFileInput` e il pulsante "Carica a
 `#rcUploadZone` è rimasto come avviso `.ov-empty` ("Nessun arrivo disponibile") perché il codice lo
 nasconde/mostra già per id. Controllo in `test/esegui.sh`.
 
+### «Nuova prenotazione» e «camera spostata» si decidono sul file Prenotazioni precedente (28/11/2026)
+
+Il QM: *«molte card dicono nuova prenotazione ma non è vero»* (16 su 20 segnate). Prima
+`rcAggiornaDaArrivi` confrontava i **nomi** con `guestsData`, cioè le card che quel computer aveva in
+memoria dal caricamento precedente **dello stesso giorno**: un elenco vecchio o diverso su quel computer
+(altra postazione, caricamento della notte, nomi letti diversi) e ospiti prenotati da giorni risultavano
+nuovi. Ora `prenHandlePdf` legge il caricamento precedente (`qm_pren_ultimo`, sul cloud, anche se fatto
+da un altro computer: tutte le prenotazioni che partivano da quel giorno in poi, quindi anche gli arrivi
+futuri) e lo passa a `_rcSegnaNovita(guests,prec,ora)`:
+- **nuova** = il **codice** della prenotazione non c'era nel file precedente (senza codice, file vecchi:
+  stesso ospite per nome, `_qmNomeChiave`);
+- **spostata** = stesso codice, camera diversa (`prevCamera` = quella di prima);
+- i segni vecchi si tolgono sempre; **nessun confronto** (nessuna card segnata) se non c'è un caricamento
+  precedente o è più vecchio di `RC_NOVITA_MAX_ORE` = 36 ore (direbbe «nuove» tutte quelle prenotate nel
+  frattempo).
+Il codice viaggia negli arrivi (`_prenArriviData` → `codice`) e nella card (`codice`, `_ospite`). Il vecchio
+confronto per nome resta solo per il Riepilogo Reception caricato a mano (senza file precedente).
+Controlli in `test/controlli.js` («nuova» e «spostata» si decidono sul file Prenotazioni precedente).
+
 ### La vista nella composizione della Registration della Galleria (28/11/2026, QM)
 
 Proposta mostrata prima; le card col testa navy erano «troppo pesanti», scelte le **schede leggere**.
@@ -329,7 +348,8 @@ Proposta mostrata prima; le card col testa navy erano «troppo pesanti», scelte
   compatte»). **Ora**: scheda ariosa, tre per riga; camera grande in etichetta chiara (`.rc5-camera`,
   azzurrino con scritta blu); «Nuova» in oro o «Spostata · era …» in rosso come parola piccola in alto a
   destra (`.rc5-st`); soggiorno «28/11 → 01/12 · 3 notti · 2 ospiti · BB» (trattamento in sigla) e
-  canale sotto; Seleziona e Stampa in fondo. **La spunta è nel blu di Compass** (`accent-color`), non il
+  canale sotto; Seleziona e Stampa in fondo. Nome e stato uno sotto l'altro (`.rc5-nb`): accanto, il nome
+  andava a capo lettera per lettera. **La spunta è nel blu di Compass** (`accent-color`), non il
   blu elettrico del browser (QM). Stessi id (`rc-card-<i>`), `rcToggleSelect`, `preparePrint`, `rcOpenModal`.
 - `rcRenderSourceLine` ora scrive una frase nella fascia verde (`#rcSourceLine`).
 

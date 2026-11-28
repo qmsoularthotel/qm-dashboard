@@ -4967,3 +4967,35 @@ if (typeof renderDay === 'function') (function () {
     ok('Matarese sì',                               /Matarese/.test(box.innerHTML), true);
   } finally { document.querySelectorAll = vq; weekData = wd; _turnoVista = tv; }
 })();
+
+// ---------------------------------------------------------------------------
+sez('Registration card: «nuova» e «spostata» si decidono sul file Prenotazioni precedente (28/11/2026)');
+// Il QM: «molte card dicono nuova prenotazione ma non è vero». Prima si confrontavano i NOMI con le
+// card in memoria su quel computer; ora il CODICE della prenotazione col file precedente sul cloud.
+// Nomi e codici inventati.
+(function () {
+  var ora = Date.UTC(2026, 10, 28, 10, 0, 0);
+  var prec = { ts: ora - 3 * 3600000, righe: [
+    { codice: 'ab 123', ospite: 'Rossi Mario', camera: 'Art 3', arrivo: '2026-11-28', partenza: '2026-12-01' },
+    { codice: 'CD456',  ospite: 'Bianchi Anna', camera: 'Art 10', arrivo: '2026-11-28', partenza: '2026-12-02' },
+    { ospite: 'Verdi Luca', camera: '101', arrivo: '2026-11-28', partenza: '2026-11-30' }   // file senza codici
+  ] };
+  var g = [
+    { codice: 'AB123', nome: 'Mario Rossi', _ospite: 'Rossi Mario', camera: 'Art 3' },          // c'era: non nuova
+    { codice: 'CD456', nome: 'Anna Bianchi', _ospite: 'Bianchi Anna', camera: 'Art 12' },        // spostata
+    { codice: 'EF789', nome: 'Sara Neri', _ospite: 'Neri Sara', camera: '205' },                 // nuova
+    { codice: '', nome: 'Luca Verdi', _ospite: 'Verdi Luca', camera: '101' },                    // per nome: c'era
+    { codice: 'GH000', nome: 'Ugo Pini', _ospite: 'Pini Ugo', camera: '102', isNew: true }        // segno vecchio da togliere? no: è nuova
+  ];
+  var r = _rcSegnaNovita(g, prec, ora);
+  ok('stesso codice (anche con spazi diversi): non è nuova',    !!(r[0].isNew || r[0].roomChanged), false);
+  ok('stesso codice, camera diversa: spostata',                  r[1].roomChanged === true && r[1].prevCamera === 'Art 10' && !r[1].isNew, true);
+  ok('codice che non c\'era: nuova',                              r[2].isNew, true);
+  ok('senza codice si cerca per nome',                           !!(r[3].isNew || r[3].roomChanged), false);
+  // Un segno rimasto da un confronto vecchio non deve sopravvivere a quello nuovo.
+  var g2 = [{ codice: 'AB123', nome: 'Mario Rossi', _ospite: 'Rossi Mario', camera: 'Art 3', isNew: true }];
+  ok('un vecchio «nuova» si toglie se il codice c\'era',          !!_rcSegnaNovita(g2, prec, ora)[0].isNew, false);
+  ok('caricamento precedente di oltre 36 ore: nessun confronto', _rcSegnaNovita(g, { ts: ora - 40 * 3600000, righe: prec.righe }, ora), null);
+  ok('nessun caricamento precedente: nessun confronto',          _rcSegnaNovita(g, null, ora), null);
+  ok('caricamento precedente vuoto: nessun confronto',           _rcSegnaNovita(g, { ts: ora, righe: [] }, ora), null);
+})();

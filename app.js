@@ -9863,6 +9863,28 @@ let guestsData=[];
 // Registration Cards: niente caricamento dalla pagina (14/11/2026), le card vengono dal file
 // Prenotazioni dei Caricamenti. Tolti zona di trascinamento, input e "Carica altro".
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){rcCloseModal();closePrintDialog();}});
+// Nuova prenotazione / camera spostata rispetto al file Prenotazioni caricato l'ultima volta
+// (qm_pren_ultimo: le prenotazioni che partivano da quel giorno in poi, quindi anche gli arrivi
+// futuri). Nuova = il suo codice non c'era; spostata = stesso codice, camera diversa. Senza codice
+// (file vecchi) si cerca lo stesso ospite per nome. Ritorna null se il confronto non si può fare:
+// nessun caricamento precedente, oppure più vecchio di 36 ore (direbbe «nuove» tutte quelle
+// prenotate nel frattempo, che è proprio l'errore da evitare): allora nessuna card viene segnata.
+const RC_NOVITA_MAX_ORE=36;
+function _rcSegnaNovita(guests,prec,ora){
+  if(!prec||!Array.isArray(prec.righe)||!prec.righe.length||!prec.ts)return null;
+  if(!(ora-prec.ts>=0&&ora-prec.ts<=RC_NOVITA_MAX_ORE*3600000))return null;
+  const cod=s=>String(s||'').replace(/\s/g,'').toUpperCase();
+  const perCod={},perNome={};
+  prec.righe.forEach(r=>{if(!r)return;if(r.codice)perCod[cod(r.codice)]=r;const k=_qmNomeChiave(r.ospite);if(k&&!perNome[k])perNome[k]=r;});
+  return(guests||[]).map(g=>{
+    const{isNew,roomChanged,prevCamera,...pulito}=g;
+    const r=(g.codice&&perCod[cod(g.codice)])||perNome[_qmNomeChiave(g._ospite||g.nome)];
+    if(!r)return{...pulito,isNew:true};
+    if(String(r.camera||'').replace(/\s/g,'').toLowerCase()!==String(g.camera||'').replace(/\s/g,'').toLowerCase())
+      return{...pulito,roomChanged:true,prevCamera:r.camera};
+    return pulito;
+  });
+}
 // Deriva le registration card dagli arrivi correnti (arriviData) — arrivi con check-in
 // oggi, esclusi Principe e Mastrangelo che non ne hanno bisogno.
 //
@@ -9876,7 +9898,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){rcCloseModal();clos
 //
 // Ritorna 'ok' · 'nessuna' (arrivi presenti, ma tutti Principe/Mastrangelo) · 'vuoto'
 // (nessun arrivo valido: le card NON sono state aggiornate).
-function rcAggiornaDaArrivi(sameDayAsPrev){
+function rcAggiornaDaArrivi(sameDayAsPrev,precPren){
     // Claude ora classifica già in "arrivi" tutti gli ospiti con check-in oggi,
     // anche se nel PDF erano già in sezione "In Casa"
     if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length){return'vuoto';}
@@ -9890,7 +9912,9 @@ function rcAggiornaDaArrivi(sameDayAsPrev){
       checkout:a.partenza?rcFmtDate(a.partenza,year):'',
       origine:a.origine||'',
       struttura:a.struttura||'',
-      tipoCamera:a.tipo_camera||''
+      tipoCamera:a.tipo_camera||'',
+      codice:a.codice||'',
+      _ospite:a.ospite||''
     });
     // Principe/Umberto e Mastrangelo non necessitano di registration card
     const _rcExclStruct=new Set(['PR','MS']);
@@ -9898,7 +9922,14 @@ function rcAggiornaDaArrivi(sameDayAsPrev){
     // Segna nuove prenotazioni e camere spostate rispetto al set precedente di RC,
     // per evidenziarle e permettere di stampare solo quelle — solo se il caricamento
     // precedente era per lo stesso giorno, altrimenti confronteremmo con ieri
-    if(sameDayAsPrev){
+    // «Nuova» e «spostata» si decidono sul FILE PRENOTAZIONI PRECEDENTE (QM, 28/11/2026: «molte card
+    // dicono nuova prenotazione ma non è vero»). Prima si confrontavano i NOMI con le card che quel
+    // computer aveva in memoria dal caricamento precedente dello stesso giorno: un elenco vecchio o
+    // diverso su quel computer, e ospiti prenotati da giorni risultavano nuovi. Il codice della
+    // prenotazione invece c'è in tutti e due i file e il precedente sta sul cloud. Vedi _rcSegnaNovita.
+    const _nov=_rcSegnaNovita(guests,precPren,Date.now());
+    if(_nov)guests=_nov;
+    else if(sameDayAsPrev&&!precPren){
       // Chiave per nome tollerante a ordine parole/accenti/maiuscole: l'AI può leggere
       // lo stesso nome in modo leggermente diverso tra un upload e l'altro (es. "Priva Yeela"
       // vs "Yeela Priva") — confrontando l'insieme ordinato delle parole invece della stringa
@@ -10192,7 +10223,7 @@ function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(
   const card=document.createElement('div');card.className='rc5-card'+(_rcSelected.has(idx)?' rc-card-selected':'');card.id='rc-card-'+idx;
   const trat=String(g.trattamento||'').trim().toUpperCase();
   const meta=[String(g.checkin||'—').slice(0,5)+' → '+String(g.checkout||'—').slice(0,5),nights+(nights===1?' notte':' notti'),g.pax+' '+(g.pax===1?'ospite':'ospiti'),trat].filter(Boolean).map(_esc).join(' · ');
-  card.innerHTML=`<div class="rc5-h"><span class="rc5-camera">${_esc(g.camera)}</span><span class="rc5-nome">${_esc(g.nome)}</span>${stato}</div><div class="rc5-r1">${meta}</div>${origine?`<div class="rc5-r2">${isBooking?BK_ICON:''}${_esc(origine)}</div>`:''}<div class="rc5-f"><label onclick="event.stopPropagation()"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)"${_rcSelected.has(idx)?' checked':''}> Seleziona</label><button class="rc5-stampa" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
+  card.innerHTML=`<div class="rc5-h"><span class="rc5-camera">${_esc(g.camera)}</span><div class="rc5-nb"><span class="rc5-nome">${_esc(g.nome)}</span>${stato}</div></div><div class="rc5-r1">${meta}</div>${origine?`<div class="rc5-r2">${isBooking?BK_ICON:''}${_esc(origine)}</div>`:''}<div class="rc5-f"><label onclick="event.stopPropagation()"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)"${_rcSelected.has(idx)?' checked':''}> Seleziona</label><button class="rc5-stampa" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}
@@ -18620,7 +18651,8 @@ function _prenIntervallo(pren){
 function _prenArriviData(pren,iso){
   const dmy=s=>{const[a,m,g]=s.split('-');return (+g)+'/'+(+m);};   // "20/8", come prima
   const base=p=>({camera:p.camera, struttura:p.struttura, ospite:p.ospite, pax:p.pax,
-                  arrivo:dmy(p.arrivo), partenza:dmy(p.partenza), origine:p.origine, trattamento:p.tratt});
+                  arrivo:dmy(p.arrivo), partenza:dmy(p.partenza), origine:p.origine, trattamento:p.tratt,
+                  codice:p.codice||''});
   const arrivi=[],fermate=[],partenze=[];
   pren.forEach(p=>{
     if(p.arrivo===iso)      arrivi.push({...base(p), tipo_camera:p.tipo, note:'', alert:false});
@@ -18741,7 +18773,10 @@ async function prenHandlePdf(file){
       uc('error','Nessuna prenotazione'); return;
     }
     const iso=_prenOggiIso();
-    const _rec=_prenRecuperaPartenze(letti,await _prenLeggiUltimo(),iso);
+    // Il caricamento precedente (dal cloud: anche se fatto da un altro computer) serve due volte:
+    // per recuperare le partenze e per dire quali card sono davvero nuove o spostate.
+    const _precUlt=await _prenLeggiUltimo();
+    const _rec=_prenRecuperaPartenze(letti,_precUlt,iso);
     const pren=_rec.pren;
     _prenSalvaUltimo(pren,iso);
     const per=_prenIntervallo(pren);
@@ -18766,7 +18801,7 @@ async function prenHandlePdf(file){
     //     dell'ultimo Riepilogo Reception caricato a mano: qm_arriviData era aggiornata,
     //     ma nessuno ridisegnava la vista Registrazione.
     let _rcEsito='vuoto';
-    try{_rcEsito=rcAggiornaDaArrivi(_rcStessoGiorno);}catch(e){console.error('[Prenotazioni] registration card:',e);}
+    try{_rcEsito=rcAggiornaDaArrivi(_rcStessoGiorno,_precUlt);}catch(e){console.error('[Prenotazioni] registration card:',e);}
     try{rcApplicaScadenza();}catch(e){}
 
     // 2. Colazioni per tutto l'intervallo (ex Report pasti)
