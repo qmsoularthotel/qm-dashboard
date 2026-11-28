@@ -1517,3 +1517,53 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .bia5-seg button{border:none;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text-muted);font-family:inherit;}
 .bia5-seg button.on{background:var(--accent);color:#fff;}
 .bia5>.inv5-fascia{margin-top:0;}
+
+/* Registration Cards di Compass nella composizione della Registration della Galleria (28/11/2026, QM):
+   testata (rcRenderTesta), il foglio che si stampa copiato dalla Galleria, e le schede LEGGERE
+   (QM: le card col testa navy «troppo pesanti», scelta A): bianche, camera nel cerchio navy/oro,
+   filo oro a sinistra se nuove o spostate. */
+.rc5-btn{display:flex;gap:8px;flex-wrap:wrap;}
+.rc5-b{font-size:12.5px!important;padding:7px 14px!important;}
+.rc5-cam{min-width:50px;height:34px;border-radius:17px;background:var(--accent);border:2px solid var(--gold);color:#fff;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 9px;flex-shrink:0;white-space:nowrap;}
+.rc5-voce{cursor:pointer;}
+.rc5-voce:hover .inv5-vt{color:var(--accent);text-decoration:underline dotted;}
+.rc5-foglio{flex:1;background:#fff;border:1px solid var(--border-light);border-radius:4px;box-shadow:0 6px 18px rgba(12,31,51,.10);padding:12px;display:flex;flex-direction:column;gap:7px;max-width:220px;width:100%;margin:0 auto;aspect-ratio:210/297;transform:rotate(-1.5deg);}
+.rc5-foglio .f-testa{display:flex;justify-content:space-between;align-items:center;border:1.5px solid var(--accent);border-bottom:2.5px solid var(--gold);border-radius:4px 4px 0 0;padding:6px 8px;}
+.rc5-foglio .f-tit{font-size:8px;font-weight:700;color:var(--accent);}
+.rc5-foglio .f-cam{font-size:14px;font-weight:700;color:var(--accent);line-height:1;}
+.rc5-foglio .f-riga{height:6px;border-radius:3px;background:var(--surface2);}
+.rc5-foglio .f-nome{height:10px;width:62%;border-radius:3px;background:var(--accent);opacity:.85;margin:3px 0 2px;}
+.rc5-foglio .f-box{display:flex;border:1px solid var(--accent);border-radius:3px;overflow:hidden;}
+.rc5-foglio .f-box>span{flex:1;height:16px;border-right:1px solid var(--border);}
+.rc5-foglio .f-box>span:last-child{border-right:none;}
+.rc5-foglio .f-cc{display:flex;gap:2px;}
+.rc5-foglio .f-cc>span{width:9px;height:9px;border:1px solid var(--accent);border-radius:2px;}
+.rc5-foglio .f-due{display:flex;border:1px solid var(--accent);border-radius:3px;overflow:hidden;}
+.rc5-foglio .f-due>div{flex:1;padding:5px;display:flex;flex-direction:column;gap:4px;}
+.rc5-foglio .f-due>div:first-child{border-right:1px solid var(--accent);}
+.rc5-foglio .f-due i{display:block;height:4px;border-radius:2px;background:var(--surface2);}
+.rc5-foglio .f-due b{display:block;width:16px;height:5px;border-radius:1px;background:var(--accent);}
+.rc5-foglio .f-firme{margin-top:auto;display:flex;gap:12px;}
+.rc5-foglio .f-firme>span{flex:1;border-bottom:1px solid var(--accent);height:14px;}
+.rc5-barra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 2px 10px;}
+.rc5-barra .inv5-ll{margin:0;}
+.rc5-pill{font-size:11px;font-weight:700;background:var(--accent-bg);color:var(--accent);padding:2px 9px;border-radius:10px;}
+.rc5-sum{font-size:12px;color:var(--text-muted);}
+.rc5-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.rc5-card{background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px 10px;cursor:pointer;transition:box-shadow .15s,border-color .15s;}
+.rc5-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
+.rc5-card.hi{border-left:4px solid var(--gold);}
+/* Selezionata: basta la spunta (un bordo in più la appesantiva). */
+.rc5-card.rc-card-selected{box-shadow:none;outline:none;}
+.rc5-top{display:flex;gap:11px;align-items:flex-start;}
+.rc5-n{min-width:0;}
+.rc5-n b{display:block;font-size:14.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;}
+.rc5-n span{display:block;font-size:12px;color:var(--text-muted);margin-top:2px;}
+.rc5-n .rc5-orig{display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-top:4px;}
+.rc5-n em{display:block;font-style:normal;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
+.rc5-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border-light);}
+.rc5-foot label{font-size:11.5px;color:var(--text-muted);display:flex;gap:5px;align-items:center;cursor:pointer;}
+.rc5-stampa{font-size:11.5px;font-weight:600;padding:4px 12px;background:none;color:var(--accent);border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;}
+.rc5-stampa:hover{border-color:var(--accent);}
+@media (max-width:1100px){.rc5-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media (max-width:640px){.rc5-grid{grid-template-columns:1fr;}.rc5-foglio{max-width:170px;}}

@@ -9978,16 +9978,60 @@ function rcFileMancanti(){
 }
 function rcApplicaScadenza(){
   const manca=rcFileMancanti(),blocca=manca.length>0;
-  const panel=document.getElementById('rcPanel'),box=document.getElementById('rcScadute');
+  const panel=document.getElementById('rcPanel');
   if(panel)panel.style.display=blocca?'none':'';
-  if(box){
-    box.style.display=blocca?'':'none';
+  try{rcRenderTesta(manca);}catch(e){}
+  return blocca;
+}
+// Testata nella composizione della Registration Cards della Galleria (QM, 28/11/2026): riga oro,
+// titolo-verdetto, le card nuove o spostate (già selezionate) nel riquadro grande, il foglio che si
+// stampa, tre riquadri. Bloccata finché mancano i caricamenti di oggi: lucchetto e cosa manca.
+function rcRenderTesta(manca){
+  manca=manca||rcFileMancanti();
+  const blocca=manca.length>0;
+  const $=id=>document.getElementById(id);
+  const g=Array.isArray(guestsData)?guestsData:[];
+  const oggi=new Date();
+  const GG=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+  const MM=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const unico=(typeof PREN_UNICO!=='undefined'&&PREN_UNICO);
+  let ts=null;try{ts=parseInt(localStorage.getItem('qm_ts_'+(unico?'prenTs':'arriviTs'))||'0')||null;}catch(e){}
+  const ora=ts?String(new Date(ts).getHours()).padStart(2,'0')+':'+String(new Date(ts).getMinutes()).padStart(2,'0'):'';
+  const nArr=(arriviData&&arriviData.arrivi)?arriviData.arrivi.length:0;
+  const k=$('rcK');
+  if(k)k.textContent=GG[oggi.getDay()]+' '+oggi.getDate()+' '+MM[oggi.getMonth()]+(!blocca&&ora?' · dal file Prenotazioni delle '+ora:'')+(!blocca&&nArr?' · '+nArr+' arrivi':'');
+  const hi=g.map((x,i)=>({x,i})).filter(o=>o.x.isNew||o.x.roomChanged);
+  const t=$('rcT');
+  if(t)t.textContent=blocca?'Registration card non ancora disponibili'
+    :hi.length?(hi.length===1?'1 registration card da stampare per prima':hi.length+' registration card da stampare per prime')
+    :!g.length?'Nessun arrivo oggi':(g.length===1?'1 registration card pronta':g.length+' registration card pronte');
+  ['rcPrintAllBtn'].forEach(id=>{const b=$(id);if(b)b.style.display=blocca||!g.length?'none':'';});
+  if(blocca){const b=$('rcPrintSelBtn');if(b)b.style.display='none';}
+  const cerchio=svg=>`<span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svg}</svg></span>`;
+  const nov=$('rcNovita');
+  if(nov){
     if(blocca){
-      const cosa=manca.map(x=>'<b>'+x+'</b>').join(' e ');
-      document.getElementById('rcScaduteTesto').innerHTML=`<b style="color:var(--text);">Registration card non ancora disponibili.</b><br>Si vedono e si stampano dopo il primo caricamento di oggi di Prenotazioni e Piano Settimanale nell'Upload Center. Manca${manca.length>1?'no':''}: ${cosa}.`;
+      nov.innerHTML=`<div class="inv5-centro" style="height:100%;min-height:230px">${cerchio('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>')}<div class="inv5-gt">Si sbloccano coi caricamenti di oggi</div><div class="inv5-gs">Le card si vedono e si stampano dopo il primo caricamento di oggi di Prenotazioni e Piano Settimanale nell'Upload Center. Manca${manca.length>1?'no':''}: <b>${manca.map(_esc).join('</b> e <b>')}</b>.</div></div>`;
+    }else if(hi.length){
+      nov.innerHTML=`<div class="inv5-gl">Nuove o cambiate dall'ultimo caricamento</div>${hi.map(o=>{const x=_rcPulito(o.x);const n=rcCalcNights(x.checkin,x.checkout);
+        return`<div class="inv5-voce rc5-voce" onclick="rcOpenModal(${o.i})"><span class="rc5-cam">${_esc(x.camera)}</span><div><div class="inv5-vt">${_esc(x.nome)} <span class="inv5-vq">· ${x.isNew?'nuova prenotazione':'camera spostata'}</span></div><div class="inv5-vs">${x.roomChanged?'era in '+_esc(x.prevCamera||'un\'altra camera')+': la card stampata prima ha la camera sbagliata':_esc(String(x.checkin||'').slice(0,5)+' → '+String(x.checkout||'').slice(0,5)+' · '+n+' notti · '+x.pax+' '+(x.pax===1?'ospite':'ospiti'))}</div>${x.roomChanged?'<div class="inv5-urg">Da ristampare</div>':''}</div></div>`;}).join('')}<div class="inv5-gs inv5-dopo">Sono già selezionate: «Stampa selezionate» stampa solo queste. Tocca un nome per l'anteprima.</div>`;
+    }else{
+      nov.innerHTML=`<div class="inv5-gl">Nuove o cambiate dall'ultimo caricamento</div><div class="inv5-centro" style="min-height:200px">${cerchio('<path d="M5 12l5 5L19 7"/>')}<div class="inv5-gt">Nessuna novità</div><div class="inv5-gs">${g.length?'Le card sono quelle del caricamento precedente: si stampano tutte con «Stampa tutte».':'Oggi non ci sono arrivi nel file Prenotazioni.'}</div></div>`;
     }
   }
-  return blocca;
+  const cam=$('rcFoglioCam');if(cam)cam.textContent=g.length?String(g[0].camera||'101'):'101';
+  const ps=$('rcPassi');
+  if(ps){
+    const passo=(n,tt,x)=>`<div class="inv5-passo"><span class="inv5-pn">${n}</span><div><div class="inv5-pt">${tt}</div><div class="inv5-ps">${x}</div></div></div>`;
+    const ok='✓';
+    ps.innerHTML=blocca
+      ?passo(manca.includes('Prenotazioni')?'!':ok,'Prenotazioni',manca.includes('Prenotazioni')?'da caricare oggi nell\'Upload Center':'caricato oggi')
+        +passo(manca.includes('Piano Settimanale')?'!':ok,'Piano Settimanale',manca.includes('Piano Settimanale')?'da caricare oggi nell\'Upload Center':'caricato oggi')
+        +passo(g.length,'Card in attesa','si mostrano appena arrivano i caricamenti')
+      :passo(ok,'Prenotazioni e Piano caricati','oggi'+(ora?' alle '+ora:'')+' nell\'Upload Center')
+        +passo(hi.length,'Nuove o spostate',hi.length?'già selezionate, in cima all\'elenco':'nessuna dall\'ultimo caricamento')
+        +passo(g.length-hi.length,'Già pronte','uguali all\'ultimo caricamento');
+  }
 }
 function rcTodayStr(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
 function ccNumberHTML(){const g=[0,1,2,3].map(()=>`<div class="cc-group">${[0,1,2,3].map(()=>`<span class="cc-digit"></span>`).join('')}</div>`);return`<div class="cc-num-wrap">${g[0]}<span class="cc-dash">–</span>${g[1]}<span class="cc-dash">–</span>${g[2]}<span class="cc-dash">–</span>${g[3]}</div>`;}
@@ -10072,6 +10116,7 @@ function rcRenderCards(guests){
   // subito quello che faceva "Stampa evidenziate", e si può togliere o aggiungere una spunta.
   _rcSelected=new Set(sorted.map((g,i)=>g.isNew||g.roomChanged?i:-1).filter(i=>i>=0));
   document.getElementById('rcCountBadge').textContent=sorted.length+(sorted.length===1?' ospite':' ospiti');
+  const vuoto=document.getElementById('rcUploadZone');if(vuoto)vuoto.style.display='none';
   const grid=document.getElementById('rcCardGrid');
   grid.innerHTML='';
   sorted.forEach((g,i)=>grid.appendChild(rcBuildPreview(g,i)));
@@ -10088,16 +10133,15 @@ function rcRenderCards(guests){
 function rcRenderSourceLine(){
   const el=document.getElementById('rcSourceLine');
   if(!el)return;
-  if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length){el.style.display='none';return;}
-  // Col file unico la fonte è l'export Prenotazioni, non più il Riepilogo Reception:
-  // nome, timestamp e slot da riaprire cambiano di conseguenza (vedi PREN_UNICO).
+  // Col file unico la fonte è l'export Prenotazioni, non più il Riepilogo Reception.
   const unico=(typeof PREN_UNICO!=='undefined'&&PREN_UNICO);
   const doc=unico?'Prenotazioni (PMS)':'Riepilogo Reception';
   let ts=null;
   try{ts=parseInt(localStorage.getItem('qm_ts_'+(unico?'prenTs':'arriviTs'))||'0')||null;}catch(e){}
   const tsStr=ts?fmtUploadTs(ts).replace('↑ ',''):'';
-  el.style.display='flex';
-  el.innerHTML=`${_ovIcona('doc')}<span>${doc} caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span>`;
+  const n=(arriviData&&arriviData.arrivi)?arriviData.arrivi.length:0;
+  el.textContent=n?`Le card nascono dal file ${doc} caricato nell'Upload Center${tsStr?' ('+tsStr+')':''}: ${n} arrivi rilevati.`
+    :`Le card nascono dal file ${doc} caricato nell'Upload Center.`;
 }
 function rcToggleSelect(idx,checked){
   if(checked)_rcSelected.add(idx);else _rcSelected.delete(idx);
@@ -10125,21 +10169,19 @@ function rcPrintSelected(){
   if(!idxs.length){cqAvviso('Nessuna card selezionata.');return;}
   preparePrintIdxs(idxs);
 }
+// Scheda leggera (QM, 28/11/2026: le card pesanti col testa navy «troppo pesanti», scelta A):
+// bianca, camera nel cerchio navy/oro, una riga col soggiorno, filo oro a sinistra se nuova o spostata.
 function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(g.checkin,g.checkout);
   const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
   const arrivoMatch=arriviData&&arriviData.arrivi&&arriviData.arrivi.find(a=>normCam(a.camera)===normCam(g.camera));
   const origine=String(g.origine||(arrivoMatch&&arrivoMatch.origine)||'').trim();
   const isBooking=/booking/i.test(origine);
-  const origBadge=origine?`<span class="rc-gcard-pill${isBooking?' booking':''}">${isBooking?BK_ICON:''}${origine}</span>`:'';
-  // Evidenzia in rosso nuove prenotazioni e camere spostate rispetto al caricamento precedente —
-  // sempre subito sotto l'intestazione della card
-  const hiIcon=g.isNew?'🆕':(g.roomChanged?'↔️':'');
-  const hiText=g.isNew?'Nuova prenotazione':(g.roomChanged?'Camera spostata — era '+g.prevCamera:'');
-  const hiLabel=hiText;
-  const hiBand=hiLabel?`<div class="rc-gcard-hi-band">${hiIcon} ${hiText}</div>`:'';
-  const card=document.createElement('div');card.className='rc-gcard'+(hiLabel?' hi':'')+(_rcSelected.has(idx)?' rc-card-selected':'');card.id='rc-card-'+idx;
-  const checkbox=`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:10px;color:var(--text-dim);flex-shrink:0;"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)" style="cursor:pointer;"${_rcSelected.has(idx)?' checked':''}>Seleziona</label>`;
-  card.innerHTML=`<div class="rc-gcard-top"><span class="rc-gcard-label">Registration Card</span><span class="rc-gcard-room">Camera ${_esc(g.camera)}</span></div>${hiBand}<div class="rc-gcard-guest">${_esc(g.nome)}</div><div class="rc-gcard-dates"><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Arrivo</div><div class="rc-gdate-val">${g.checkin||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Partenza</div><div class="rc-gdate-val">${g.checkout||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Notti</div><div class="rc-gdate-val">${nights}</div></div></div><div class="rc-gcard-pills"><span class="rc-gcard-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-gcard-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div><div class="rc-gcard-footer"><span class="rc-gcard-hint">Clicca per anteprima</span><div style="display:flex;align-items:center;gap:8px;">${checkbox}<button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
+  const hiText=g.isNew?'Nuova prenotazione':(g.roomChanged?'Camera spostata: era '+(g.prevCamera||'un\'altra'):'');
+  const card=document.createElement('div');card.className='rc5-card'+(hiText?' hi':'')+(_rcSelected.has(idx)?' rc-card-selected':'');card.id='rc-card-'+idx;
+  // Trattamento in sigla (RO, BB…): per esteso andava a capo e appesantiva la scheda.
+  const trat=String(g.trattamento||'').trim().toUpperCase();
+  const meta=[String(g.checkin||'—').slice(0,5)+' → '+String(g.checkout||'—').slice(0,5),nights+(nights===1?' notte':' notti'),g.pax+' '+(g.pax===1?'ospite':'ospiti'),trat].filter(Boolean).map(_esc).join(' · ');
+  card.innerHTML=`<div class="rc5-top"><span class="rc5-cam">${_esc(g.camera)}</span><div class="rc5-n"><b>${_esc(g.nome)}</b><span>${meta}</span>${origine?`<span class="rc5-orig${isBooking?' booking':''}">${isBooking?BK_ICON:''}${_esc(origine)}</span>`:''}${hiText?`<em>${_esc(hiText)}</em>`:''}</div></div><div class="rc5-foot"><label onclick="event.stopPropagation()"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)"${_rcSelected.has(idx)?' checked':''}> Seleziona</label><button class="rc5-stampa" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}

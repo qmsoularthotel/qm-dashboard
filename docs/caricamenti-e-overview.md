@@ -310,6 +310,22 @@ zona di trascinamento `#rcUploadZone` con `#rcFileInput` e il pulsante "Carica a
 `#rcUploadZone` è rimasto come avviso `.ov-empty` ("Nessun arrivo disponibile") perché il codice lo
 nasconde/mostra già per id. Controllo in `test/esegui.sh`.
 
+### La vista nella composizione della Registration della Galleria (28/11/2026, QM)
+
+Proposta mostrata prima; le card col testa navy erano «troppo pesanti», scelte le **schede leggere**.
+- `#rcResults` è una `.inv5-cornice.rc5`. `rcRenderTesta(manca)` (chiamata da `rcApplicaScadenza`, quindi
+  a ogni ridisegno e a ogni caricamento) scrive riga oro (`#rcK`: giorno, ora del file Prenotazioni,
+  arrivi), titolo-verdetto (`#rcT`), il riquadro grande `#rcNovita` (le card nuove o spostate, già
+  selezionate, tocca → `rcOpenModal`; senza novità: «Nessuna novità»; bloccata: lucchetto e cosa manca)
+  e i tre riquadri `#rcPassi`. A destra il foglio A4 disegnato, copiato dalla Galleria (`.rc5-foglio`).
+- **Bloccata** finché mancano i caricamenti di oggi: come prima `#rcPanel` sparisce; il vecchio
+  riquadro `#rcScadute` non si usa più (il messaggio è nel riquadro grande), resta nascosto.
+- `rcBuildPreview` disegna la scheda leggera `.rc5-card` (camera nel cerchio navy/oro, una riga col
+  soggiorno, trattamento in sigla, origine se c'è, «Nuova prenotazione» / «Camera spostata: era …» in
+  oro, filo oro a sinistra). Selezionata = solo la spunta. Stessi id (`rc-card-<i>`), stessi
+  `rcToggleSelect`, `preparePrint`, `rcOpenModal`: stampa e anteprima invariate.
+- `rcRenderSourceLine` ora scrive una frase nella fascia verde (`#rcSourceLine`).
+
 ### Stampa delle registration card a basso consumo di toner (06/11/2026)
 
 `PRINT_CSS`: tolta la fascia nera in testa (hotel e camera in nero su bianco con una riga), logo SoulArt con

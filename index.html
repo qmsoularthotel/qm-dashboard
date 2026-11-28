@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=344">
+<link rel="stylesheet" href="style.css?v=345">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='689-20261128';
+  const V='690-20261128';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -642,23 +642,41 @@
         </div>
         <div class="rc-processing" id="rcProcessing"><div class="rc-spinner"></div><span id="rcProcText" style="font-size:13px;color:var(--text-muted)">Lettura in corso...</span></div>
         <div class="rc-error" id="rcError"></div>
-        <div id="rcResults" style="display:none;margin-top:.9rem;">
-          <div id="rcSourceLine" style="display:none;align-items:center;gap:8px;font-size:var(--fs-xxs);color:var(--text-dim);background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:7px 12px;margin-bottom:10px;"></div>
-          <div id="rcScadute" class="panel" style="display:none;"><div class="panel-body" id="rcScaduteTesto" style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.5;"></div></div>
-          <div class="panel" id="rcPanel">
-            <div class="panel-header">
-              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8 17c0-2 2-3 4-3s4 1 4 3"/></svg></span>
-              <span class="panel-title">Registration Cards</span>
-              <span class="rc-count-badge" id="rcCountBadge">—</span>
-              <span id="rcSummaryLine" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;"></span>
-              <div style="margin-left:auto;display:flex;gap:8px;">
-                <button id="rcPrintSelBtn" onclick="rcPrintSelected()" style="display:none;background:transparent;color:var(--accent);border:1px solid var(--accent);padding:5px 14px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;font-family:inherit;align-items:center;"></button>
-                <button onclick="preparePrint(null)" style="background:var(--accent);color:#fff;border:none;padding:5px 16px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;font-family:inherit;">Stampa tutte</button>
+        <div id="rcResults" style="display:none;">
+          <!-- Composizione della Registration Cards della Galleria (QM, 28/11/2026): testata con le
+               card nuove o spostate, il foglio che si stampa, tre riquadri; sotto le schede leggere. -->
+          <div class="inv5-cornice rc5">
+            <div class="inv5-hero">
+              <div><div class="inv5-k" id="rcK">Registration cards</div><div class="inv5-t" id="rcT">—</div></div>
+              <div class="rc5-btn">
+                <button id="rcPrintSelBtn" class="btn-ghost rc5-b" onclick="rcPrintSelected()" style="display:none;"></button>
+                <button id="rcPrintAllBtn" class="btn-primary rc5-b" onclick="preparePrint(null)">Stampa tutte</button>
               </div>
             </div>
-            <div class="panel-body">
-              <div class="rc-gcard-grid" id="rcCardGrid"></div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="rcNovita"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Cosa si stampa</div>
+                <div class="rc5-foglio" aria-hidden="true">
+                  <div class="f-testa"><span class="f-tit">Registration Card</span><span class="f-cam" id="rcFoglioCam">101</span></div>
+                  <div class="f-nome"></div>
+                  <div class="f-box"><span></span><span></span><span></span><span></span></div>
+                  <div class="f-due"><div><b></b><i></i><i></i><i style="width:80%"></i></div><div><b></b><i></i><i></i><i style="width:70%"></i></div></div>
+                  <div class="f-cc"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                  <div class="f-riga" style="width:90%"></div>
+                  <div class="f-due"><div><i></i><i></i><i style="width:60%"></i></div><div><i></i><i></i><i style="width:75%"></i></div></div>
+                  <div class="f-firme"><span></span><span></span></div>
+                </div>
+                <div class="inv5-nota">Un foglio A4 per ospite, a basso consumo di toner</div>
+              </div>
             </div>
+            <div class="inv5-passi" id="rcPassi"></div>
+            <div id="rcScadute" style="display:none;"><div id="rcScaduteTesto"></div></div>
+            <div id="rcPanel">
+              <div class="rc5-barra"><div class="inv5-ll">Registration cards</div><span class="rc5-pill" id="rcCountBadge">—</span><span class="rc5-sum" id="rcSummaryLine"></span></div>
+              <div class="rc5-grid" id="rcCardGrid"></div>
+            </div>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span><span id="rcSourceLine">Le card nascono dal file Prenotazioni caricato nell'Upload Center.</span> Qui non si carica niente. Tocca una card per l'anteprima.</span></div>
           </div>
         </div>
       </div>
@@ -1726,7 +1744,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1208-20261128"></script>
+<script src="app.js?v=1209-20261128"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
