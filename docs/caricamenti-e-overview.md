@@ -322,10 +322,15 @@ Proposta mostrata prima; le card col testa navy erano «troppo pesanti», scelte
   e i tre riquadri `#rcPassi`. A destra il foglio A4 disegnato, copiato dalla Galleria (`.rc5-foglio`).
 - **Bloccata** finché mancano i caricamenti di oggi: come prima `#rcPanel` sparisce; il vecchio
   riquadro `#rcScadute` non si usa più (il messaggio è nel riquadro grande), resta nascosto.
-- `rcBuildPreview` disegna la scheda leggera `.rc5-card` (camera nel cerchio navy/oro, una riga col
-  soggiorno, trattamento in sigla, origine se c'è, «Nuova prenotazione» / «Camera spostata: era …» in
-  oro, filo oro a sinistra). Selezionata = solo la spunta. Stessi id (`rc-card-<i>`), stessi
-  `rcToggleSelect`, `preparePrint`, `rcOpenModal`: stampa e anteprima invariate.
+- `rcBuildPreview` disegna la scheda `.rc5-card`. **Tre prove scartate dal QM il 28/11/2026**, da non
+  rifare: card col testa navy e la camera nella pastiglia oro («troppo pesanti»); schede leggere con
+  filo e scritta oro sulle nuove (coi dati veri 16 su 20 erano «nuove»: tutto oro, «non mi convince»);
+  schede compatte su una riga con la camera in pastiglia navy («troppe pastiglie blu scuro», «troppo
+  compatte»). **Ora**: scheda ariosa, tre per riga; camera grande in etichetta chiara (`.rc5-camera`,
+  azzurrino con scritta blu); «Nuova» in oro o «Spostata · era …» in rosso come parola piccola in alto a
+  destra (`.rc5-st`); soggiorno «28/11 → 01/12 · 3 notti · 2 ospiti · BB» (trattamento in sigla) e
+  canale sotto; Seleziona e Stampa in fondo. **La spunta è nel blu di Compass** (`accent-color`), non il
+  blu elettrico del browser (QM). Stessi id (`rc-card-<i>`), `rcToggleSelect`, `preparePrint`, `rcOpenModal`.
 - `rcRenderSourceLine` ora scrive una frase nella fascia verde (`#rcSourceLine`).
 
 ### Stampa delle registration card a basso consumo di toner (06/11/2026)

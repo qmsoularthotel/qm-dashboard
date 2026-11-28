@@ -1549,21 +1549,26 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .rc5-barra .inv5-ll{margin:0;}
 .rc5-pill{font-size:11px;font-weight:700;background:var(--accent-bg);color:var(--accent);padding:2px 9px;border-radius:10px;}
 .rc5-sum{font-size:12px;color:var(--text-muted);}
-.rc5-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
-.rc5-card{background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px 10px;cursor:pointer;transition:box-shadow .15s,border-color .15s;}
+/* Schede ariose (28/11/2026, QM dopo tre prove): camera grande in etichetta chiara, «Nuova» /
+   «Spostata» come parola piccola, la spunta nel blu di Compass (accent-color). */
+.rc5-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+/* Bordo più scuro (--border) ma sempre di 1px (QM, 28/11/2026). */
+.rc5-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px 12px;cursor:pointer;transition:box-shadow .15s,border-color .15s;display:flex;flex-direction:column;}
 .rc5-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);}
-.rc5-card.hi{border-left:4px solid var(--gold);}
-/* Selezionata: basta la spunta (un bordo in più la appesantiva). */
-.rc5-card.rc-card-selected{box-shadow:none;outline:none;}
-.rc5-top{display:flex;gap:11px;align-items:flex-start;}
-.rc5-n{min-width:0;}
-.rc5-n b{display:block;font-size:14.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;}
-.rc5-n span{display:block;font-size:12px;color:var(--text-muted);margin-top:2px;}
-.rc5-n .rc5-orig{display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-top:4px;}
-.rc5-n em{display:block;font-style:normal;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
-.rc5-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border-light);}
-.rc5-foot label{font-size:11.5px;color:var(--text-muted);display:flex;gap:5px;align-items:center;cursor:pointer;}
-.rc5-stampa{font-size:11.5px;font-weight:600;padding:4px 12px;background:none;color:var(--accent);border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;}
+.rc5-card.rc-card-selected{outline:none;}
+.rc5-h{display:flex;align-items:center;gap:10px;}
+.rc5-camera{font-size:18px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:8px;padding:2px 10px;letter-spacing:-.01em;white-space:nowrap;line-height:1.4;}
+.rc5-nome{font-size:15px;font-weight:700;color:var(--text);min-width:0;flex:1 1 0;overflow-wrap:anywhere;line-height:1.3;}
+.rc5-st{font-size:11.5px;font-weight:700;color:var(--gold);white-space:nowrap;flex-shrink:0;}
+.rc5-st.sp{color:var(--red);}
+.rc5-st i{display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px;}
+.rc5-r1{font-size:13px;color:var(--text);margin-top:10px;}
+.rc5-r2{font-size:12px;color:var(--text-muted);margin-top:3px;display:flex;align-items:center;gap:4px;}
+.rc5-f{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px;border-top:1px solid var(--border-light);}
+.rc5-r2,.rc5-r1:nth-last-child(2){margin-bottom:12px;}
+.rc5-f label{font-size:12px;color:var(--text-muted);display:flex;gap:6px;align-items:center;cursor:pointer;}
+.rc5 input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer;margin:0;}
+.rc5-stampa{font-size:12px;font-weight:600;padding:5px 14px;background:none;color:var(--accent);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-family:inherit;}
 .rc5-stampa:hover{border-color:var(--accent);}
 @media (max-width:1100px){.rc5-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media (max-width:640px){.rc5-grid{grid-template-columns:1fr;}.rc5-foglio{max-width:170px;}}

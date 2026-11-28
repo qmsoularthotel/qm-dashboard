@@ -10176,19 +10176,23 @@ function rcPrintSelected(){
   if(!idxs.length){cqAvviso('Nessuna card selezionata.');return;}
   preparePrintIdxs(idxs);
 }
-// Scheda leggera (QM, 28/11/2026: le card pesanti col testa navy «troppo pesanti», scelta A):
-// bianca, camera nel cerchio navy/oro, una riga col soggiorno, filo oro a sinistra se nuova o spostata.
+// Scheda della registration card (QM, 28/11/2026, dopo tre prove): prima card col testa navy
+// («troppo pesanti»), poi schede col filo e la scritta oro (coi dati veri quasi tutte oro), poi
+// schede compatte con le pastiglie navy («troppe pastiglie scure», «troppo compatte»). Ora: scheda
+// ariosa, camera grande in etichetta chiara, «Nuova» (oro) o «Spostata · era …» (rosso) come parola
+// piccola in alto a destra, soggiorno e canale su due righe, Seleziona e Stampa in fondo; la spunta
+// nel blu di Compass (accent-color), non quello del browser.
 function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(g.checkin,g.checkout);
   const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
   const arrivoMatch=arriviData&&arriviData.arrivi&&arriviData.arrivi.find(a=>normCam(a.camera)===normCam(g.camera));
   const origine=String(g.origine||(arrivoMatch&&arrivoMatch.origine)||'').trim();
   const isBooking=/booking/i.test(origine);
-  const hiText=g.isNew?'Nuova prenotazione':(g.roomChanged?'Camera spostata: era '+(g.prevCamera||'un\'altra'):'');
-  const card=document.createElement('div');card.className='rc5-card'+(hiText?' hi':'')+(_rcSelected.has(idx)?' rc-card-selected':'');card.id='rc-card-'+idx;
-  // Trattamento in sigla (RO, BB…): per esteso andava a capo e appesantiva la scheda.
+  const stato=g.isNew?'<span class="rc5-st"><i></i>Nuova</span>'
+    :g.roomChanged?`<span class="rc5-st sp"><i></i>Spostata${g.prevCamera?' · era '+_esc(g.prevCamera):''}</span>`:'';
+  const card=document.createElement('div');card.className='rc5-card'+(_rcSelected.has(idx)?' rc-card-selected':'');card.id='rc-card-'+idx;
   const trat=String(g.trattamento||'').trim().toUpperCase();
   const meta=[String(g.checkin||'—').slice(0,5)+' → '+String(g.checkout||'—').slice(0,5),nights+(nights===1?' notte':' notti'),g.pax+' '+(g.pax===1?'ospite':'ospiti'),trat].filter(Boolean).map(_esc).join(' · ');
-  card.innerHTML=`<div class="rc5-top"><span class="rc5-cam">${_esc(g.camera)}</span><div class="rc5-n"><b>${_esc(g.nome)}</b><span>${meta}</span>${origine?`<span class="rc5-orig${isBooking?' booking':''}">${isBooking?BK_ICON:''}${_esc(origine)}</span>`:''}${hiText?`<em>${_esc(hiText)}</em>`:''}</div></div><div class="rc5-foot"><label onclick="event.stopPropagation()"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)"${_rcSelected.has(idx)?' checked':''}> Seleziona</label><button class="rc5-stampa" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
+  card.innerHTML=`<div class="rc5-h"><span class="rc5-camera">${_esc(g.camera)}</span><span class="rc5-nome">${_esc(g.nome)}</span>${stato}</div><div class="rc5-r1">${meta}</div>${origine?`<div class="rc5-r2">${isBooking?BK_ICON:''}${_esc(origine)}</div>`:''}<div class="rc5-f"><label onclick="event.stopPropagation()"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)"${_rcSelected.has(idx)?' checked':''}> Seleziona</label><button class="rc5-stampa" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}
