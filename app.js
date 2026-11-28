@@ -3602,29 +3602,30 @@ function pianoRenderWeek(activeIdx){
   // alto, «Oggi» in oro. Misure e disposizione su smartphone stanno in style.css (.pw-*).
   const _oggi=today.getDate()+'/'+(today.getMonth()+1);
   const _dm=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?parseInt(m[1],10)+'/'+parseInt(m[2],10):'';};
-  const _cerchio=(n,cls,t)=>`<span class="pw-n${n?'':' zero'}${cls?' '+cls:''}" title="${n} ${t}">${n}</span>`;
+  const _cerchio=(n,cls,t,lib)=>`<span class="pw-n${n?'':' zero'}${cls?' '+cls:''}" title="${n} ${t}${lib?`, di cui ${lib} a San Liborio`:''}">${n}${lib?'<i class="pw-lib"></i>':''}</span>`;
   // Due strisce separate (QM, 28/11/2026): SoulArt insieme a San Liborio, e la Boutique da sola.
   // Prima i conti erano uno solo, con San Liborio sommato alla Boutique. Il giorno si sceglie
   // da una qualunque delle due e si accende in entrambe.
   const _n=a=>(a&&a.length)||0;
   const _conta=(hs,g)=>hs.reduce((t,h)=>{const x=g[h]||{};t.f+=_n(x.fermate);t.p+=_n(x.partenze)+_n(x.cambi);return t;},{f:0,p:0});
-  // San Liborio dentro la striscia del SoulArt (QM, 28/11/2026): quante fermate e partenze sono sue,
-  // solo quando ce ne sono: scritta oro «Lib» accanto al numero, senza pastiglia né numero (QM:
-  // basta sapere che c'è; quante, nel suggerimento al passaggio del mouse). Senza, resta lo spazio vuoto
-  // (.vuoto), così su smartphone i giorni della striscia restano allineati.
-  const _sl=(n,t)=>n?`<span class="pw-sl" title="${n} ${t} a San Liborio">Lib</span>`:'<span class="pw-sl vuoto" aria-hidden="true">Lib</span>';
-  const _striscia=(titolo,hs,conSL)=>`<div class="pw-sez"><div class="pw-sez-t">${titolo}</div><div class="pw-riga">${pianoData.giorni.map((g,i)=>{
+  // San Liborio dentro la striscia del SoulArt (QM, 28/11/2026): un puntino oro in alto a destra
+  // sul cerchio, solo quando ce ne sono; quante, nel suggerimento al passaggio del mouse. Prima era la
+  // scritta «Lib» sotto la parola: le schede venivano diverse l'una dall'altra (QM: non convinceva).
+  // Accanto al titolo della striscia la legenda: «● San Liborio» (QM, 28/11/2026).
+  const _striscia=(titolo,hs,conSL)=>`<div class="pw-sez"><div class="pw-sez-t">${titolo}${conSL?'<span class="pw-leg"><i class="pw-lib"></i>San Liborio</span>':''}</div><div class="pw-riga">${pianoData.giorni.map((g,i)=>{
     const c=_conta(hs,g);
     const sl=conSL?_conta(['liborio'],g):{f:0,p:0};
     const parts=g.label?g.label.split(' '):['?'];
     const dayName=_esc(parts[0].substring(0,3));
     const dayDate=_esc(parts[1]||'');
     const oggi=_dm(parts[1])===_oggi;
-    return`<div onclick="pianoNavRender(${i})" class="pw-day${i===activeIdx?' on':''}" title="${_esc(g.label||'')}">
+    // «Oggi» e «giorno scelto» sono due segni diversi (QM, 28/11/2026): oggi = scritta e giorno in oro;
+    // scelto = cornice oro tutt'intorno. Prima erano lo stesso filo oro e si confondevano.
+    return`<div onclick="pianoNavRender(${i})" class="pw-day${i===activeIdx?' on':''}${oggi?' oggi':''}" title="${_esc(g.label||'')}">
       <div class="pw-k">${oggi?'Oggi':''}</div>
       <div class="pw-g">${dayName}<span class="pw-d">${dayDate}</span></div>
-      <div class="pw-r">${_cerchio(c.p,'part','partenze e cambi')}<span class="pw-lt"><span class="pw-l">partenze</span>${conSL?_sl(sl.p,'partenze e cambi'):''}</span></div>
-      <div class="pw-r">${_cerchio(c.f,'','fermate')}<span class="pw-lt"><span class="pw-l">fermate</span>${conSL?_sl(sl.f,'fermate'):''}</span></div>
+      <div class="pw-r">${_cerchio(c.p,'part','partenze e cambi',sl.p)}<span class="pw-l">partenze</span></div>
+      <div class="pw-r">${_cerchio(c.f,'','fermate',sl.f)}<span class="pw-l">fermate</span></div>
       <div class="pw-t"><span class="pw-tl">Tot</span><span class="pw-tv">${c.f+c.p}</span></div>
     </div>`;}).join('')}</div></div>`;
   row.innerHTML=_striscia('SoulArt Hotel · Art Suite San Liborio',['soulart','liborio'],true)+_striscia('Boutique Hotel',['boutique']);

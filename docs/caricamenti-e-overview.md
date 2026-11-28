@@ -359,3 +359,20 @@ e «Lib» resta vicino al cerchio. Senza San Liborio lo spazio vuoto di «Lib» 
 scritte (altrimenti la parola stava più in alto del cerchio) e resta solo senza scritte, per allineare.
 
 **Bordo delle fermate** (28/11/2026, QM): blu (`--accent`), non oro.
+
+**Puntino di San Liborio, Oggi distinto dal giorno scelto** (28/11/2026, sera, QM: «ancora non mi
+convince» — le cose che disturbavano erano «Lib», i colori e Oggi confuso col giorno scelto):
+- «Lib» scritto è **tolto**: ora un puntino oro (`.pw-lib`) sta in alto a destra sul cerchio di
+  partenze o fermate quando ce ne sono di San Liborio; quante, nel suggerimento del cerchio. Le schede
+  restano tutte uguali (prima Lun aveva «Lib» sotto partenze, Dom sotto fermate). `.pw-lt`, `.pw-sl` e
+  `_sl` non esistono più. Il puntino è spiegato da una legenda «● San Liborio» accanto al titolo della
+  striscia SoulArt (`.pw-leg`).
+- Tutte le schede sullo **stesso fondo** (`--surface`): prima quelle non scelte erano grigie e
+  sembrava «diversa» la scheda normale.
+- **Oggi** = scritta «Oggi» e nome del giorno in oro (`.pw-day.oggi`); **giorno scelto** = cornice oro
+  tutt'intorno (`.pw-day.on`). Prima erano lo stesso filo oro in alto e si confondevano.
+- **Titoli delle strisce** in grigio (`--text-muted`), non più oro: l'oro resta solo per Oggi, il
+  giorno scelto e San Liborio.
+- Colori dei cerchi: per ora quelli di prima (arancio le partenze, azzurro col bordo blu le fermate).
+  Sono state mostrate al QM due alternative (tutto nel blu Compass; cerchi grigi neutri): da
+  decidere.
