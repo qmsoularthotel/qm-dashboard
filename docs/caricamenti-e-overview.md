@@ -333,7 +333,7 @@ va riprovato. Controlli in `test/controlli.js` ("riga delle date").
 ## Settimana del Piano in stile «Registration Cards» (28/11/2026, QM)
 
 `pianoRenderWeek` disegna i sette giorni come schede `.pw-day` (style.css): «Oggi» in oro, giorno,
-data, fermate e partenze+cambi nei cerchi blu notte (bordo oro / arancio, grigio se zero), «Tot» in
+data, fermate e partenze+cambi nei cerchi chiari (azzurro con bordo oro / arancio, vuoto se zero: il QM ha scartato i cerchi blu pieni, «troppe pallette blu»), «Tot» in
 fondo; il giorno scelto ha il filo oro in alto. Niente più icone PNG né misure scritte in JavaScript:
 la disposizione per smartphone sta nelle `@media` di `.pw-*` (sotto 1100px spariscono le scritte
 accanto ai cerchi, che restano nel suggerimento al passaggio del mouse). Esempio nella guida di stile.
