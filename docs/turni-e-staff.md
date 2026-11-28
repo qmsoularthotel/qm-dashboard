@@ -636,3 +636,15 @@ dove sta la linguetta. Negli altri mesi il calendario resta com'era. Controlli i
   Malattia **blu** (`--blue`), per non confondersi col riposo. La riga dei giorni va a capo su
   smartphone.
 - Controlli: «Turno di oggi: settimana successiva e colori» in `test/controlli.js`.
+
+### Richieste di fila contano una volta (28/11/2026, QM)
+
+Ferie l'1, 2, 3 e 4 maggio sono **una** richiesta, non quattro; riposo l'8 e il 9 ottobre una, non
+due. `_tpBlocchi(lista)` (pura) raggruppa le richieste di una persona per giorni consecutivi con la
+**stessa preferenza** (riposo poi ferie restano due; lo stesso giorno scritto due volte resta uno;
+vale a cavallo del mese). `_tpConsuntivo` conta i blocchi sia nella colonna della settimana
+prossima sia nel *Totale richieste* dei tre mesi prima; l'elenco aperto mostra una riga per
+richiesta («08/11 – 09/11/2026 · 2 giorni · RIPOSO»). Un blocco a cavallo dell'inizio della
+settimana prossima conta una volta per parte. Il numerino dei giorni nel calendario resta per
+giorno. Copia identica nella Galleria (`_gtBlocchi`, `_gtConsuntivo`, confrontate in
+`test/galleria.js`). Sabotaggio (niente raggruppamento) → 8 controlli falliscono.

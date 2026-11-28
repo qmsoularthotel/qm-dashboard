@@ -12160,6 +12160,23 @@ function _tpTrimestre(oggi){
 }
 // Dal 16/11/2026 (QM) compaiono SOLO le persone con almeno una richiesta per la settimana
 // prossima: `sett` è quante ne hanno lì, `tot` quante nei tre mesi prima (vedi _tpTrimestre).
+// Richieste di fila (QM, 28/11/2026): ferie l'1, 2, 3 e 4 maggio sono UNA richiesta, non quattro;
+// riposo l'8 e il 9 ottobre una, non due. Giorni consecutivi della stessa persona con la stessa
+// preferenza formano un blocco, e si contano i blocchi. Lo stesso giorno scritto due volte resta uno.
+// Riceve le richieste di UNA persona. Pura.
+function _tpBlocchi(lista){
+  const giorno=r=>{const m=String(_tpFmtDate(r.giornoRichiesto)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?Math.round(Date.UTC(+m[3],+m[2]-1,+m[1])/864e5):null;};
+  const tipo=r=>String(r.preferenza||'').trim().replace(/\s+/g,' ').toUpperCase();
+  const ord=(lista||[]).map(r=>({r,g:giorno(r),t:tipo(r)})).filter(x=>x.g!==null).sort((a,b)=>a.t.localeCompare(b.t)||a.g-b.g);
+  const out=[];
+  ord.forEach(x=>{
+    const u=out[out.length-1];
+    if(u&&u.t===x.t&&x.g-u.ga<=1){if(x.g>u.ga){u.ga=x.g;u.a=x.r;}u.righe.push(x.r);return;}
+    out.push({t:x.t,gd:x.g,ga:x.g,da:x.r,a:x.r,righe:[x.r]});
+  });
+  return out.map(b=>({da:b.da,a:b.a,giorni:b.ga-b.gd+1,preferenza:b.da.preferenza,
+    motivazione:(b.righe.find(r=>r.motivazione)||{}).motivazione||'',righe:b.righe}));
+}
 function _tpConsuntivo(dati,filtro,oggi){
   const tr=_tpTrimestre(oggi),per={};
   const giorniSett=_tpSettimanaProssima(oggi).giorni;
@@ -12169,11 +12186,11 @@ function _tpConsuntivo(dati,filtro,oggi){
     if(filtro&&filtro!=='tutti'&&_tpRepNorm(r.reparto)!==filtro)return;
     if(!chiave(r)||!giorniSett.includes(_tpFmtDate(r.giornoRichiesto)))return;
     const k=chiave(r);
-    const x=inSett[k]||(inSett[k]={nome:String(r.nome).trim().replace(/\s+/g,' '),reparto:_tpRepNorm(r.reparto),n:0});
-    x.n++;
+    const x=inSett[k]||(inSett[k]={nome:String(r.nome).trim().replace(/\s+/g,' '),reparto:_tpRepNorm(r.reparto),righe:[]});
+    x.righe.push(r);
   });
   // Chi chiede per la settimana prossima compare SEMPRE, anche con 0 nei tre mesi prima.
-  Object.keys(inSett).forEach(k=>{per[k]={nome:inSett[k].nome,reparto:inSett[k].reparto,tot:0,sett:inSett[k].n};});
+  Object.keys(inSett).forEach(k=>{per[k]={nome:inSett[k].nome,reparto:inSett[k].reparto,tot:0,sett:_tpBlocchi(inSett[k].righe).length};});
   (dati||[]).forEach(r=>{
     if(filtro&&filtro!=='tutti'&&_tpRepNorm(r.reparto)!==filtro)return;
     const m=String(_tpFmtDate(r.giornoRichiesto)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return;
@@ -12183,13 +12200,14 @@ function _tpConsuntivo(dati,filtro,oggi){
     const k=nome.toLowerCase();
     if(!per[k])return;
     const x=per[k];
-    x.tot++;
     (x.lista||(x.lista=[])).push(r);
     // Fra le scritture della stessa persona si mostra quella "ben scritta" (Rossi Anna, non
     // ROSSI anna): ogni parola con la sola iniziale maiuscola.
     const bene=s=>s.split(' ').every(w=>/^[A-ZÀ-Þ][^A-ZÀ-Þ]*$/.test(w));
     if(!bene(x.nome)&&bene(nome))x.nome=nome;
   });
+  // Si contano le richieste, non i giorni: i giorni di fila sono una richiesta sola.
+  Object.values(per).forEach(x=>{x.blocchi=_tpBlocchi(x.lista);x.tot=x.blocchi.length;});
   return {tr,righe:Object.values(per).sort((a,b)=>b.tot-a.tot||a.nome.localeCompare(b.nome,'it'))};
 }
 // Finestrella del giorno (QM, 19/11/2026): nella settimana evidenziata, cliccando un giorno con
@@ -12368,7 +12386,9 @@ function turniPrefRender(){
         <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Totale<br>richieste</th>
       </tr></thead><tbody>${cons.righe.map((x,i)=>{
         const k=x.nome.toLowerCase(),aperto=_tpConsAperto.has(k);
-        const lista=(x.lista||[]).slice().sort((a,b)=>{const p=s=>{const m=String(_tpFmtDate(s)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?m[3]+m[2]+m[1]:'';};return p(b.giornoRichiesto).localeCompare(p(a.giornoRichiesto));});
+        // Una riga per richiesta: i giorni di fila diventano «01/05 – 04/05/2026 · 4 giorni».
+        const lista=(x.blocchi||[]).slice().sort((a,b)=>{const p=s=>{const m=String(_tpFmtDate(s)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?m[3]+m[2]+m[1]:'';};return p(b.da.giornoRichiesto).localeCompare(p(a.da.giornoRichiesto));});
+        const quando=b=>b.giorni>1?_tpFmtDate(b.da.giornoRichiesto).slice(0,5)+' – '+_tpFmtDate(b.a.giornoRichiesto)+' · '+b.giorni+' giorni':_tpFmtDate(b.da.giornoRichiesto);
         const fondo=i%2?'background:var(--surface2);':'';
         return `<tr style="border-top:1px solid var(--border-light);${fondo}">
         <td style="padding:7px 14px;font-weight:600;">${_esc(x.nome)}</td>
@@ -12377,7 +12397,7 @@ function turniPrefRender(){
         <td style="padding:7px 14px;text-align:right;white-space:nowrap;"><span style="display:inline-block;vertical-align:middle;height:6px;border-radius:3px;background:${_tpConsColore(x.tot)};width:${Math.max(4,Math.round(60*Math.min(x.tot,21)/21))}px;margin-right:8px;"></span>${x.tot?`<button onclick="turniPrefToggleCons('${_esc(k.replace(/\\/g,'\\\\').replace(/'/g,"\\'"))}')" title="Vedi le richieste" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-variant-numeric:tabular-nums;">${x.tot} ${aperto?'▴':'▾'}</button>`:'<strong style="font-variant-numeric:tabular-nums;">0</strong>'}</td>
       </tr>${aperto?`<tr style="${fondo}"><td colspan="4" style="padding:0 14px 10px;">
         <div style="border-left:2px solid ${_tpConsColore(x.tot)};padding:2px 0 2px 10px;display:flex;flex-direction:column;gap:3px;font-size:var(--fs-xxs);">
-          ${lista.map(r=>`<div style="display:flex;gap:10px;flex-wrap:wrap;"><span style="font-weight:700;font-variant-numeric:tabular-nums;min-width:74px;">${_esc(_tpFmtDate(r.giornoRichiesto))}</span><span style="font-weight:700;color:${prefColor(r.preferenza)};">${_esc(r.preferenza||'—')}</span>${r.motivazione?`<span style="color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</span>`:''}</div>`).join('')}
+          ${lista.map(r=>`<div style="display:flex;gap:10px;flex-wrap:wrap;"><span style="font-weight:700;font-variant-numeric:tabular-nums;min-width:74px;">${_esc(quando(r))}</span><span style="font-weight:700;color:${prefColor(r.preferenza)};">${_esc(r.preferenza||'—')}</span>${r.motivazione?`<span style="color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</span>`:''}</div>`).join('')}
         </div></td></tr>`:''}`;
       }).join('')}
       </tbody></table>`:`<div style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessuna richiesta per la settimana prossima${_tpFilter!=='tutti'?' in '+_esc(_tpFilter):''}.</div>`}</div>
