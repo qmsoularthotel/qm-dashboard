@@ -4999,3 +4999,17 @@ sez('Registration card: «nuova» e «spostata» si decidono sul file Prenotazio
   ok('nessun caricamento precedente: nessun confronto',          _rcSegnaNovita(g, null, ora), null);
   ok('caricamento precedente vuoto: nessun confronto',           _rcSegnaNovita(g, { ts: ora, righe: [] }, ora), null);
 })();
+
+// ---------------------------------------------------------------------------
+sez('Registration card divise per struttura (28/11/2026)');
+// Le card si mostrano a gruppi, ma stampa e selezione usano l'indice nell'elenco unico: i gruppi
+// devono contenere gli indici GIUSTI, tutti e una volta sola. Nomi inventati.
+(function () {
+  var g = [{ struttura: 'BH' }, { struttura: 'SA' }, { struttura: 'sa' }, { struttura: '' }, { struttura: 'SL' }, { struttura: 'BH' }];
+  var gr = _rcGruppi(g);
+  ok('ordine: SoulArt, Boutique, San Liborio, poi le altre', gr.map(function (x) { return x.cod; }).join(','), 'SA,BH,SL,_');
+  ok('ogni gruppo ha i suoi indici, nell\'ordine dell\'elenco', gr.map(function (x) { return x.idx.join('-'); }).join(','), '1-2,0-5,4,3');
+  ok('nessuna card persa o doppia', gr.reduce(function (t, x) { return t + x.idx.length; }, 0), g.length);
+  ok('struttura mancante: «Altre camere»', gr[3].nome, 'Altre camere');
+  ok('elenco vuoto: nessun gruppo', _rcGruppi([]).length, 0);
+})();

@@ -353,6 +353,11 @@ Proposta mostrata prima; le card col testa navy erano «troppo pesanti», scelte
   canale sotto; Seleziona e Stampa in fondo. Il nome sta da solo accanto alla camera (`.rc5-nb`): con lo stato accanto andava a
   capo lettera per lettera. **La spunta è nel blu di Compass** (`accent-color`), non il
   blu elettrico del browser (QM). Stessi id (`rc-card-<i>`), `rcToggleSelect`, `preparePrint`, `rcOpenModal`.
+- **Divise per struttura** (QM, 28/11/2026: «è ancora un muro», scelta B fra solo ombra e ombra+strutture):
+  `rcRenderCards` mette in `#rcCardGrid` un titolo per struttura (`.rc5-gruppo-t`, nome e numero) e la sua
+  griglia; ordine SoulArt, Boutique, San Liborio, Art Resort, Santa Brigida, poi «Altre camere» (`_rcGruppi`,
+  controlli in `test/controlli.js`). `guestsData` resta un elenco solo: gli indici di stampa e selezione non
+  cambiano. Schede bianche con ombra leggera e 16px fra l'una e l'altra.
 - `rcRenderSourceLine` ora scrive una frase nella fascia verde (`#rcSourceLine`).
 
 ### Stampa delle registration card a basso consumo di toner (06/11/2026)

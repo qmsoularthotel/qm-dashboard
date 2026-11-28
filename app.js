@@ -10143,6 +10143,17 @@ function executePrint(){const iframe=document.getElementById('printIframe');ifra
 // Resta per l'Escape globale: ora la finestra è quella di Compass e si chiude da sé.
 function closePrintDialog(){}
 let _rcSelected=new Set();
+// Raggruppa gli indici delle card per struttura, nell'ordine SoulArt, Boutique, San Liborio,
+// Art Resort, Santa Brigida, poi le altre; dentro ogni gruppo l'ordine resta quello di guestsData
+// (nuove e spostate in cima). Struttura assente o sconosciuta: «Altre camere».
+const RC_ORDINE_STRUTTURE=['SA','BH','SL','AR','SB'];
+function _rcGruppi(guests){
+  const per={};
+  (guests||[]).forEach((g,i)=>{const c=String(g.struttura||'').toUpperCase();const k=RC_HOTELS[c]?c:'_';(per[k]=per[k]||[]).push(i);});
+  const nomi={SL:'Art Suite San Liborio',AR:'Art Resort Galleria Umberto',SB:'Art Suite Santa Brigida'};
+  return RC_ORDINE_STRUTTURE.concat(Object.keys(per).filter(k=>k!=='_'&&!RC_ORDINE_STRUTTURE.includes(k)),['_'])
+    .filter(k=>per[k]).map(k=>({cod:k,nome:k==='_'?'Altre camere':(nomi[k]||RC_HOTELS[k].name),idx:per[k]}));
+}
 function rcRenderCards(guests){
   // Le card evidenziate (nuove/spostate) vanno in cima, per non doverle cercare nella griglia
   const sorted=[...guests].map((g,i)=>({g,i})).sort((a,b)=>{
@@ -10157,7 +10168,15 @@ function rcRenderCards(guests){
   const vuoto=document.getElementById('rcUploadZone');if(vuoto)vuoto.style.display='none';
   const grid=document.getElementById('rcCardGrid');
   grid.innerHTML='';
-  sorted.forEach((g,i)=>grid.appendChild(rcBuildPreview(g,i)));
+  // Divise per struttura, con titolo e numero (QM, 28/11/2026: tutte insieme «è ancora un muro»,
+  // scelta B). guestsData resta UN elenco: gli indici di stampa e selezione non cambiano.
+  _rcGruppi(sorted).forEach(gr=>{
+    const t=document.createElement('div');t.className='rc5-gruppo-t';
+    t.innerHTML=`${_esc(gr.nome)} <span>${gr.idx.length}</span>`;
+    const box=document.createElement('div');box.className='rc5-grid';
+    gr.idx.forEach(i=>box.appendChild(rcBuildPreview(sorted[i],i)));
+    grid.appendChild(t);grid.appendChild(box);
+  });
   document.getElementById('rcResults').style.display='block';
   rcRenderSourceLine();
   rcUpdateSelectedBtn();
