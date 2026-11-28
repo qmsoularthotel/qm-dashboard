@@ -161,6 +161,37 @@ tutta la sezione **Recensioni Expedia** (modello diverso, `weightedAvgF1`).
 
 ---
 
+## Pagine delle recensioni nella composizione della Registration Cards (28/11/2026, QM)
+
+Le 7 pagine Booking e le 4 Expedia hanno la stessa composizione di Inventari e Applicazioni
+(`.inv5-cornice`, classi proprie `.rev5-*` in style.css; esempio nella guida di stile). Proposta
+mostrata al QM con recensioni inventate, approvata («bellissimo») per tutte le strutture ed Expedia.
+- **Testa**: riga oro (struttura · Booking.com · N recensioni · periodo) e titolo-verdetto
+  `_revVerdetto(n)` («4 recensioni da rispondere» / «Tutte con risposta»).
+- **Da rispondere** (`#revDaRisp-<p>`, `#revExpDaRisp-<p>`, `_revDaRispHtml`): al massimo 6, dalla
+  più recente; voto nel cerchio navy/oro, rosso sotto 7 con «Voto basso: risposta con la linea
+  difensiva». Tocca il nome → `revVai`/`revExpVai`: se filtri o ricerca la nascondono si torna a
+  «Tutte», si va alla pagina giusta e si scorre alla scheda (`#revCard-<p>-<gi>`, `#revExpCard-…`).
+  **L'elenco conta come il numero «Senza risposta»** (`_revDaRispondere`): Booking tiene anche le
+  segnate inviate (il CSV non ha ancora la risposta: compaiono con «segnata inviata: manca ancora nel
+  CSV»), Expedia no — ognuna come il suo contatore di sempre. Controlli in `test/controlli.js`.
+- **Punteggio** (a destra): Booking = cifra grande (tocca → `openScoreTrend`), obiettivo
+  (`rev-target`), margine e voto che non fa scendere la cifra (`#rev-margine-<p>`, scritto da
+  `revRenderImpact`), casella del punteggio vero + verdetto della verifica (`revRenderCalib`, parte
+  corta). Registro delle letture e spiegazione della formula in `#rev-calib-det-<p>`, nella riga che
+  si apre. Expedia = media pesata `weightedAvgF1`, ultimi 12 mesi, Expedia e Hotels.com separati.
+- **Tre riquadri**: Booking = Senza risposta · Recensioni · In scadenza (`rev-scad-n/sub`, scritti da
+  `revRenderExpiring`; il pannello grande delle scadenze compare in `#rev-expiring-<p>` solo quando le
+  uscite cambiano la cifra, altrimenti è vuoto e nascosto). Expedia = Senza risposta · Recensioni ·
+  Voti sotto 7 negli ultimi 12 mesi.
+- **Categorie**: una tabella sola (`revRenderCatTrend` in `#revCatTrend-<p>`, `_revCatPesata` 85/10/5
+  come prima) con punteggio, barra, ultimo mese col confronto e la linea dei mesi; tocca la riga →
+  `openCatModal`. Prima: sei schede in `revCatGrid` + cinque grafici (senza Posizione, ora c'è).
+- **Riga che si apre** (`details.rev5-app`): Impatto della prossima recensione, Distribuzione del peso,
+  letture registrate. Calcoli e testi invariati.
+- **Schede**: voto nel cerchio `.inv5-num`, filo oro a sinistra se aspettano risposta (`.rev5-da`).
+  Generazione delle risposte, filtri, ricerca, pagine: invariati.
+
 ## Recensioni Booking.com
 
 ### `revGenerateReply(r)` — regole prompt

@@ -1617,7 +1617,7 @@ sez('Riquadro "Punteggio Booking reale": deve disegnarsi sempre');
 (function () {
   var elFinto = { innerHTML: '' };
   var _getEl = document.getElementById;
-  document.getElementById = function (id) { return /^rev-calib-/.test(id) ? elFinto : _getEl.call(document, id); };
+  document.getElementById = function (id) { return /^rev-calib-[a-z]{2}$/.test(id) ? elFinto : _getEl.call(document, id); };
   var _calibVero = REV_CALIB, _hotelVeri = REV_HOTELS.sa;
   var ORA = Date.now(), GG = 86400000;
   var rec = [];
@@ -2290,6 +2290,34 @@ sez('Recensioni Expedia: l\'export si carica comunque sia separato');
   ok('colonne sbagliate: nomina quella che manca', /review_rating/.test(_revExpDiagnosi(altro)), true);
   ok('e elenca quelle trovate',                    /ospite/.test(_revExpDiagnosi(altro)), true);
   ok('colonne giuste ma zero righe: lo distingue', /nessuna riga/.test(_revExpDiagnosi(COLONNE + '\n')), true);
+})();
+
+// ---------------------------------------------------------------------------
+sez('Recensioni: elenco «Da rispondere» (composizione Registration Cards, 28/11/2026)');
+(function () {
+  // Nomi inventati. L'elenco del riquadro grande deve contare ESATTAMENTE come il numero
+  // «Senza risposta» di ogni pagina: Booking tiene anche quelle segnate inviate (il CSV non ha
+  // ancora la risposta), Expedia no. Un criterio diverso farebbe dire al titolo un numero e al
+  // riquadro un altro.
+  var rec = [
+    { id: 'a', _hasReply: false, _dateTs: 100 },
+    { id: 'b', _hasReply: true,  _dateTs: 300 },
+    { id: 'c', _hasReply: false, _dateTs: 200 },
+    { id: 'd', _hasReply: false, _dateTs: 400 },
+    { id: 'e', _hasReply: false, _dateTs: 50 }
+  ];
+  var inviate = { c: true, e: 'not_needed' };
+  var k = function (r) { return r.id; };
+  var ids = function (l) { return l.map(function (r) { return r.id; }).join(''); };
+  ok('Booking: fuori risposte e «non necessaria», dentro le segnate inviate, dalla più recente',
+     ids(_revDaRispondere(rec, k, inviate, false)), 'dca');
+  ok('Expedia: fuori anche le segnate inviate', ids(_revDaRispondere(rec, k, inviate, true)), 'da');
+  ok('senza registro delle inviate non si rompe', ids(_revDaRispondere(rec, k, null, true)), 'dcae');
+  ok('elenco vuoto: nessun errore', _revDaRispondere(null, k, inviate).length, 0);
+  ok('titolo con zero', _revVerdetto(0), 'Tutte con risposta');
+  ok('titolo con una', _revVerdetto(1), '1 recensione da rispondere');
+  ok('titolo con quattro', _revVerdetto(4), '4 recensioni da rispondere');
+  ok('giorno breve', _revGg(new Date(2026, 10, 5, 12)), '5/11');
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────

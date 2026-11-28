@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=341">
+<link rel="stylesheet" href="style.css?v=342">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='686-20261128';
+  const V='687-20261128';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -672,39 +672,40 @@
         <div class="rc-processing" id="revProcessing-sa" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revError-sa" style="display:none"></div>
         <div id="revContent-sa" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)" id="revTitle-sa">SoulArt Hotel</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revPeriod-sa"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revTs-sa"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k"><span id="revTitle-sa">SoulArt Hotel</span> · Booking.com<span id="revN-sa"></span> · <span id="revPeriod-sa"></span></div>
+                <div class="inv5-t" id="revVerdetto-sa">—</div>
+                <div class="rev5-ts" id="revTs-sa"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revReset('sa')">Carica altro CSV</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revReset('sa')">Carica altro</button>
-          </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#003580;cursor:pointer;" onclick="openScoreTrend('sa')" title="Clicca per vedere l'andamento"><div class="kpi-card-icon" style="background:#e8eef8;">★</div><div class="kpi-label">Punteggio medio <span style="font-size:9px;opacity:.6;">⤢</span></div><div class="kpi-value" id="rev-avg-sa" style="color:#003580;">—</div><div class="kpi-delta" id="rev-avg-sub-sa" style="color:var(--text-dim);"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-sa">—</div><div class="kpi-delta up" id="rev-count-sub-sa"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-sa">—</div><div class="kpi-delta down" id="rev-noreply-sub-sa"></div></div>
-          </div>
-          <div id="rev-calib-sa"></div>
-          <div id="rev-target-sa" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
-            <div style="flex:1;">
-              <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-sa">—</div>
-              <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-sa">—</div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revDaRisp-sa"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio come Booking</div>
+                <div class="rev5-big" onclick="openScoreTrend('sa')" title="Clicca per vedere l'andamento"><span id="rev-avg-sa">—</span><span class="rev5-sub" id="rev-avg-sub-sa"></span></div>
+                <div id="rev-target-sa"><div class="rev5-riga"><span id="rev-target-title-sa">—</span></div><div class="rev5-nota" id="rev-target-detail-sa"></div></div>
+                <div id="rev-margine-sa"></div>
+                <div id="rev-calib-sa"></div>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
-          <div class="rev-cat-grid" id="revCatGrid-sa"></div>
-          <div id="rev-expiring-sa" style="display:block;margin-bottom:14px;"></div>
-          <div id="rev-impact-sa"></div>
-          <div id="rev-distrib-sa"></div>
-          <div class="panel" style="margin-bottom:14px;">
-            <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
-            <div class="panel-body" style="padding:14px;" id="revCatTrend-sa">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV per visualizzare</div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-noreply-sa">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="rev-noreply-sub-sa"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-count-sa">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="rev-count-sub-sa"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-scad-n-sa">—</span><div><div class="inv5-pt">In scadenza</div><div class="inv5-ps" id="rev-scad-sub-sa"></div></div></div>
             </div>
+            <div id="rev-expiring-sa" class="rev5-scad"></div>
+            <div class="inv5-tutti"><div class="inv5-ll">Categorie · media pesata e andamento mensile</div><div class="inv5-tw" id="revCatTrend-sa"></div></div>
+            <details class="rev5-app"><summary>Come pesa la prossima recensione · distribuzione del peso · letture registrate</summary>
+              <div id="rev-impact-sa"></div>
+              <div id="rev-distrib-sa"></div>
+              <div id="rev-calib-det-sa"></div>
+            </details>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="revFascia-sa"></span></div>
           </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revFlt-sa-all" onclick="revToggleFilter('sa','all')">Tutte</button>
             <button class="rev-filter-btn" id="revFlt-sa-hi" onclick="revToggleFilter('sa','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revFlt-sa-mid" onclick="revToggleFilter('sa','mid')">7–9</button>
@@ -718,7 +719,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('sa',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revList-sa"></div>
+          <div class="rev-list rev5-lista" id="revList-sa"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-bh">
@@ -731,39 +732,40 @@
         <div class="rc-processing" id="revProcessing-bh" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revError-bh" style="display:none"></div>
         <div id="revContent-bh" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)" id="revTitle-bh">Boutique Hotel</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revPeriod-bh"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revTs-bh"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k"><span id="revTitle-bh">Boutique Hotel</span> · Booking.com<span id="revN-bh"></span> · <span id="revPeriod-bh"></span></div>
+                <div class="inv5-t" id="revVerdetto-bh">—</div>
+                <div class="rev5-ts" id="revTs-bh"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revReset('bh')">Carica altro CSV</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revReset('bh')">Carica altro</button>
-          </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#003580;cursor:pointer;" onclick="openScoreTrend('bh')" title="Clicca per vedere l'andamento"><div class="kpi-card-icon" style="background:#e8eef8;">★</div><div class="kpi-label">Punteggio medio <span style="font-size:9px;opacity:.6;">⤢</span></div><div class="kpi-value" id="rev-avg-bh" style="color:#003580;">—</div><div class="kpi-delta" id="rev-avg-sub-bh" style="color:var(--text-dim);"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-bh">—</div><div class="kpi-delta up" id="rev-count-sub-bh"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-bh">—</div><div class="kpi-delta down" id="rev-noreply-sub-bh"></div></div>
-          </div>
-          <div id="rev-calib-bh"></div>
-          <div id="rev-target-bh" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
-            <div style="flex:1;">
-              <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-bh">—</div>
-              <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-bh">—</div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revDaRisp-bh"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio come Booking</div>
+                <div class="rev5-big" onclick="openScoreTrend('bh')" title="Clicca per vedere l'andamento"><span id="rev-avg-bh">—</span><span class="rev5-sub" id="rev-avg-sub-bh"></span></div>
+                <div id="rev-target-bh"><div class="rev5-riga"><span id="rev-target-title-bh">—</span></div><div class="rev5-nota" id="rev-target-detail-bh"></div></div>
+                <div id="rev-margine-bh"></div>
+                <div id="rev-calib-bh"></div>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
-          <div class="rev-cat-grid" id="revCatGrid-bh"></div>
-          <div id="rev-expiring-bh" style="display:block;margin-bottom:14px;"></div>
-          <div id="rev-impact-bh"></div>
-          <div id="rev-distrib-bh"></div>
-          <div class="panel" style="margin-bottom:14px;">
-            <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
-            <div class="panel-body" style="padding:14px;" id="revCatTrend-bh">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV per visualizzare</div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-noreply-bh">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="rev-noreply-sub-bh"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-count-bh">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="rev-count-sub-bh"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-scad-n-bh">—</span><div><div class="inv5-pt">In scadenza</div><div class="inv5-ps" id="rev-scad-sub-bh"></div></div></div>
             </div>
+            <div id="rev-expiring-bh" class="rev5-scad"></div>
+            <div class="inv5-tutti"><div class="inv5-ll">Categorie · media pesata e andamento mensile</div><div class="inv5-tw" id="revCatTrend-bh"></div></div>
+            <details class="rev5-app"><summary>Come pesa la prossima recensione · distribuzione del peso · letture registrate</summary>
+              <div id="rev-impact-bh"></div>
+              <div id="rev-distrib-bh"></div>
+              <div id="rev-calib-det-bh"></div>
+            </details>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="revFascia-bh"></span></div>
           </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revFlt-bh-all" onclick="revToggleFilter('bh','all')">Tutte</button>
             <button class="rev-filter-btn" id="revFlt-bh-hi" onclick="revToggleFilter('bh','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revFlt-bh-mid" onclick="revToggleFilter('bh','mid')">7–9</button>
@@ -777,7 +779,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('bh',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revList-bh"></div>
+          <div class="rev-list rev5-lista" id="revList-bh"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-sl">
@@ -790,39 +792,40 @@
         <div class="rc-processing" id="revProcessing-sl" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revError-sl" style="display:none"></div>
         <div id="revContent-sl" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)" id="revTitle-sl">San Liborio</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revPeriod-sl"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revTs-sl"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k"><span id="revTitle-sl">San Liborio</span> · Booking.com<span id="revN-sl"></span> · <span id="revPeriod-sl"></span></div>
+                <div class="inv5-t" id="revVerdetto-sl">—</div>
+                <div class="rev5-ts" id="revTs-sl"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revReset('sl')">Carica altro CSV</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revReset('sl')">Carica altro</button>
-          </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#003580;cursor:pointer;" onclick="openScoreTrend('sl')" title="Clicca per vedere l'andamento"><div class="kpi-card-icon" style="background:#e8eef8;">★</div><div class="kpi-label">Punteggio medio <span style="font-size:9px;opacity:.6;">⤢</span></div><div class="kpi-value" id="rev-avg-sl" style="color:#003580;">—</div><div class="kpi-delta" id="rev-avg-sub-sl" style="color:var(--text-dim);"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-sl">—</div><div class="kpi-delta up" id="rev-count-sub-sl"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-sl">—</div><div class="kpi-delta down" id="rev-noreply-sub-sl"></div></div>
-          </div>
-          <div id="rev-calib-sl"></div>
-          <div id="rev-target-sl" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
-            <div style="flex:1;">
-              <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-sl">—</div>
-              <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-sl">—</div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revDaRisp-sl"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio come Booking</div>
+                <div class="rev5-big" onclick="openScoreTrend('sl')" title="Clicca per vedere l'andamento"><span id="rev-avg-sl">—</span><span class="rev5-sub" id="rev-avg-sub-sl"></span></div>
+                <div id="rev-target-sl"><div class="rev5-riga"><span id="rev-target-title-sl">—</span></div><div class="rev5-nota" id="rev-target-detail-sl"></div></div>
+                <div id="rev-margine-sl"></div>
+                <div id="rev-calib-sl"></div>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
-          <div class="rev-cat-grid" id="revCatGrid-sl"></div>
-          <div id="rev-expiring-sl" style="display:block;margin-bottom:14px;"></div>
-          <div id="rev-impact-sl"></div>
-          <div id="rev-distrib-sl"></div>
-          <div class="panel" style="margin-bottom:14px;">
-            <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
-            <div class="panel-body" style="padding:14px;" id="revCatTrend-sl">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV per visualizzare</div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-noreply-sl">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="rev-noreply-sub-sl"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-count-sl">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="rev-count-sub-sl"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-scad-n-sl">—</span><div><div class="inv5-pt">In scadenza</div><div class="inv5-ps" id="rev-scad-sub-sl"></div></div></div>
             </div>
+            <div id="rev-expiring-sl" class="rev5-scad"></div>
+            <div class="inv5-tutti"><div class="inv5-ll">Categorie · media pesata e andamento mensile</div><div class="inv5-tw" id="revCatTrend-sl"></div></div>
+            <details class="rev5-app"><summary>Come pesa la prossima recensione · distribuzione del peso · letture registrate</summary>
+              <div id="rev-impact-sl"></div>
+              <div id="rev-distrib-sl"></div>
+              <div id="rev-calib-det-sl"></div>
+            </details>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="revFascia-sl"></span></div>
           </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revFlt-sl-all" onclick="revToggleFilter('sl','all')">Tutte</button>
             <button class="rev-filter-btn" id="revFlt-sl-hi" onclick="revToggleFilter('sl','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revFlt-sl-mid" onclick="revToggleFilter('sl','mid')">7–9</button>
@@ -836,7 +839,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('sl',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revList-sl"></div>
+          <div class="rev-list rev5-lista" id="revList-sl"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-pr">
@@ -849,39 +852,40 @@
         <div class="rc-processing" id="revProcessing-pr" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revError-pr" style="display:none"></div>
         <div id="revContent-pr" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)" id="revTitle-pr">Principe</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revPeriod-pr"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revTs-pr"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k"><span id="revTitle-pr">Principe</span> · Booking.com<span id="revN-pr"></span> · <span id="revPeriod-pr"></span></div>
+                <div class="inv5-t" id="revVerdetto-pr">—</div>
+                <div class="rev5-ts" id="revTs-pr"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revReset('pr')">Carica altro CSV</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revReset('pr')">Carica altro</button>
-          </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#003580;cursor:pointer;" onclick="openScoreTrend('pr')" title="Clicca per vedere l'andamento"><div class="kpi-card-icon" style="background:#e8eef8;">★</div><div class="kpi-label">Punteggio medio <span style="font-size:9px;opacity:.6;">⤢</span></div><div class="kpi-value" id="rev-avg-pr" style="color:#003580;">—</div><div class="kpi-delta" id="rev-avg-sub-pr" style="color:var(--text-dim);"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-pr">—</div><div class="kpi-delta up" id="rev-count-sub-pr"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-pr">—</div><div class="kpi-delta down" id="rev-noreply-sub-pr"></div></div>
-          </div>
-          <div id="rev-calib-pr"></div>
-          <div id="rev-target-pr" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
-            <div style="flex:1;">
-              <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-pr">—</div>
-              <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-pr">—</div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revDaRisp-pr"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio come Booking</div>
+                <div class="rev5-big" onclick="openScoreTrend('pr')" title="Clicca per vedere l'andamento"><span id="rev-avg-pr">—</span><span class="rev5-sub" id="rev-avg-sub-pr"></span></div>
+                <div id="rev-target-pr"><div class="rev5-riga"><span id="rev-target-title-pr">—</span></div><div class="rev5-nota" id="rev-target-detail-pr"></div></div>
+                <div id="rev-margine-pr"></div>
+                <div id="rev-calib-pr"></div>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
-          <div class="rev-cat-grid" id="revCatGrid-pr"></div>
-          <div id="rev-expiring-pr" style="display:block;margin-bottom:14px;"></div>
-          <div id="rev-impact-pr"></div>
-          <div id="rev-distrib-pr"></div>
-          <div class="panel" style="margin-bottom:14px;">
-            <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
-            <div class="panel-body" style="padding:14px;" id="revCatTrend-pr">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV per visualizzare</div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-noreply-pr">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="rev-noreply-sub-pr"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-count-pr">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="rev-count-sub-pr"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-scad-n-pr">—</span><div><div class="inv5-pt">In scadenza</div><div class="inv5-ps" id="rev-scad-sub-pr"></div></div></div>
             </div>
+            <div id="rev-expiring-pr" class="rev5-scad"></div>
+            <div class="inv5-tutti"><div class="inv5-ll">Categorie · media pesata e andamento mensile</div><div class="inv5-tw" id="revCatTrend-pr"></div></div>
+            <details class="rev5-app"><summary>Come pesa la prossima recensione · distribuzione del peso · letture registrate</summary>
+              <div id="rev-impact-pr"></div>
+              <div id="rev-distrib-pr"></div>
+              <div id="rev-calib-det-pr"></div>
+            </details>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="revFascia-pr"></span></div>
           </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revFlt-pr-all" onclick="revToggleFilter('pr','all')">Tutte</button>
             <button class="rev-filter-btn" id="revFlt-pr-hi" onclick="revToggleFilter('pr','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revFlt-pr-mid" onclick="revToggleFilter('pr','mid')">7–9</button>
@@ -895,7 +899,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('pr',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revList-pr"></div>
+          <div class="rev-list rev5-lista" id="revList-pr"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-ms">
@@ -908,39 +912,40 @@
         <div class="rc-processing" id="revProcessing-ms" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revError-ms" style="display:none"></div>
         <div id="revContent-ms" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)" id="revTitle-ms">Mastrangelo</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revPeriod-ms"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revTs-ms"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k"><span id="revTitle-ms">Mastrangelo</span> · Booking.com<span id="revN-ms"></span> · <span id="revPeriod-ms"></span></div>
+                <div class="inv5-t" id="revVerdetto-ms">—</div>
+                <div class="rev5-ts" id="revTs-ms"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revReset('ms')">Carica altro CSV</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revReset('ms')">Carica altro</button>
-          </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#003580;cursor:pointer;" onclick="openScoreTrend('ms')" title="Clicca per vedere l'andamento"><div class="kpi-card-icon" style="background:#e8eef8;">★</div><div class="kpi-label">Punteggio medio <span style="font-size:9px;opacity:.6;">⤢</span></div><div class="kpi-value" id="rev-avg-ms" style="color:#003580;">—</div><div class="kpi-delta" id="rev-avg-sub-ms" style="color:var(--text-dim);"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-ms">—</div><div class="kpi-delta up" id="rev-count-sub-ms"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-ms">—</div><div class="kpi-delta down" id="rev-noreply-sub-ms"></div></div>
-          </div>
-          <div id="rev-calib-ms"></div>
-          <div id="rev-target-ms" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
-            <div style="flex:1;">
-              <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-ms">—</div>
-              <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-ms">—</div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revDaRisp-ms"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio come Booking</div>
+                <div class="rev5-big" onclick="openScoreTrend('ms')" title="Clicca per vedere l'andamento"><span id="rev-avg-ms">—</span><span class="rev5-sub" id="rev-avg-sub-ms"></span></div>
+                <div id="rev-target-ms"><div class="rev5-riga"><span id="rev-target-title-ms">—</span></div><div class="rev5-nota" id="rev-target-detail-ms"></div></div>
+                <div id="rev-margine-ms"></div>
+                <div id="rev-calib-ms"></div>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
-          <div class="rev-cat-grid" id="revCatGrid-ms"></div>
-          <div id="rev-expiring-ms" style="display:block;margin-bottom:14px;"></div>
-          <div id="rev-impact-ms"></div>
-          <div id="rev-distrib-ms"></div>
-          <div class="panel" style="margin-bottom:14px;">
-            <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
-            <div class="panel-body" style="padding:14px;" id="revCatTrend-ms">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV per visualizzare</div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-noreply-ms">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="rev-noreply-sub-ms"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-count-ms">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="rev-count-sub-ms"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-scad-n-ms">—</span><div><div class="inv5-pt">In scadenza</div><div class="inv5-ps" id="rev-scad-sub-ms"></div></div></div>
             </div>
+            <div id="rev-expiring-ms" class="rev5-scad"></div>
+            <div class="inv5-tutti"><div class="inv5-ll">Categorie · media pesata e andamento mensile</div><div class="inv5-tw" id="revCatTrend-ms"></div></div>
+            <details class="rev5-app"><summary>Come pesa la prossima recensione · distribuzione del peso · letture registrate</summary>
+              <div id="rev-impact-ms"></div>
+              <div id="rev-distrib-ms"></div>
+              <div id="rev-calib-det-ms"></div>
+            </details>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="revFascia-ms"></span></div>
           </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revFlt-ms-all" onclick="revToggleFilter('ms','all')">Tutte</button>
             <button class="rev-filter-btn" id="revFlt-ms-hi" onclick="revToggleFilter('ms','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revFlt-ms-mid" onclick="revToggleFilter('ms','mid')">7–9</button>
@@ -954,7 +959,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('ms',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revList-ms"></div>
+          <div class="rev-list rev5-lista" id="revList-ms"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-ar">
@@ -967,39 +972,40 @@
         <div class="rc-processing" id="revProcessing-ar" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revError-ar" style="display:none"></div>
         <div id="revContent-ar" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)" id="revTitle-ar">Art Resort</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revPeriod-ar"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revTs-ar"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k"><span id="revTitle-ar">Art Resort</span> · Booking.com<span id="revN-ar"></span> · <span id="revPeriod-ar"></span></div>
+                <div class="inv5-t" id="revVerdetto-ar">—</div>
+                <div class="rev5-ts" id="revTs-ar"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revReset('ar')">Carica altro CSV</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revReset('ar')">Carica altro</button>
-          </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#003580;cursor:pointer;" onclick="openScoreTrend('ar')" title="Clicca per vedere l'andamento"><div class="kpi-card-icon" style="background:#e8eef8;">★</div><div class="kpi-label">Punteggio medio <span style="font-size:9px;opacity:.6;">⤢</span></div><div class="kpi-value" id="rev-avg-ar" style="color:#003580;">—</div><div class="kpi-delta" id="rev-avg-sub-ar" style="color:var(--text-dim);"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-ar">—</div><div class="kpi-delta up" id="rev-count-sub-ar"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-ar">—</div><div class="kpi-delta down" id="rev-noreply-sub-ar"></div></div>
-          </div>
-          <div id="rev-calib-ar"></div>
-          <div id="rev-target-ar" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
-            <div style="flex:1;">
-              <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-ar">—</div>
-              <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-ar">—</div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revDaRisp-ar"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio come Booking</div>
+                <div class="rev5-big" onclick="openScoreTrend('ar')" title="Clicca per vedere l'andamento"><span id="rev-avg-ar">—</span><span class="rev5-sub" id="rev-avg-sub-ar"></span></div>
+                <div id="rev-target-ar"><div class="rev5-riga"><span id="rev-target-title-ar">—</span></div><div class="rev5-nota" id="rev-target-detail-ar"></div></div>
+                <div id="rev-margine-ar"></div>
+                <div id="rev-calib-ar"></div>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
-          <div class="rev-cat-grid" id="revCatGrid-ar"></div>
-          <div id="rev-expiring-ar" style="display:block;margin-bottom:14px;"></div>
-          <div id="rev-impact-ar"></div>
-          <div id="rev-distrib-ar"></div>
-          <div class="panel" style="margin-bottom:14px;">
-            <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
-            <div class="panel-body" style="padding:14px;" id="revCatTrend-ar">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV per visualizzare</div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-noreply-ar">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="rev-noreply-sub-ar"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-count-ar">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="rev-count-sub-ar"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-scad-n-ar">—</span><div><div class="inv5-pt">In scadenza</div><div class="inv5-ps" id="rev-scad-sub-ar"></div></div></div>
             </div>
+            <div id="rev-expiring-ar" class="rev5-scad"></div>
+            <div class="inv5-tutti"><div class="inv5-ll">Categorie · media pesata e andamento mensile</div><div class="inv5-tw" id="revCatTrend-ar"></div></div>
+            <details class="rev5-app"><summary>Come pesa la prossima recensione · distribuzione del peso · letture registrate</summary>
+              <div id="rev-impact-ar"></div>
+              <div id="rev-distrib-ar"></div>
+              <div id="rev-calib-det-ar"></div>
+            </details>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="revFascia-ar"></span></div>
           </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revFlt-ar-all" onclick="revToggleFilter('ar','all')">Tutte</button>
             <button class="rev-filter-btn" id="revFlt-ar-hi" onclick="revToggleFilter('ar','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revFlt-ar-mid" onclick="revToggleFilter('ar','mid')">7–9</button>
@@ -1013,7 +1019,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('ar',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revList-ar"></div>
+          <div class="rev-list rev5-lista" id="revList-ar"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-sb">
@@ -1026,39 +1032,40 @@
         <div class="rc-processing" id="revProcessing-sb" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revError-sb" style="display:none"></div>
         <div id="revContent-sb" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)" id="revTitle-sb">Santa Brigida</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revPeriod-sb"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revTs-sb"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k"><span id="revTitle-sb">Santa Brigida</span> · Booking.com<span id="revN-sb"></span> · <span id="revPeriod-sb"></span></div>
+                <div class="inv5-t" id="revVerdetto-sb">—</div>
+                <div class="rev5-ts" id="revTs-sb"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revReset('sb')">Carica altro CSV</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revReset('sb')">Carica altro</button>
-          </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#003580;cursor:pointer;" onclick="openScoreTrend('sb')" title="Clicca per vedere l'andamento"><div class="kpi-card-icon" style="background:#e8eef8;">★</div><div class="kpi-label">Punteggio medio <span style="font-size:9px;opacity:.6;">⤢</span></div><div class="kpi-value" id="rev-avg-sb" style="color:#003580;">—</div><div class="kpi-delta" id="rev-avg-sub-sb" style="color:var(--text-dim);"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-sb">—</div><div class="kpi-delta up" id="rev-count-sub-sb"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-sb">—</div><div class="kpi-delta down" id="rev-noreply-sub-sb"></div></div>
-          </div>
-          <div id="rev-calib-sb"></div>
-          <div id="rev-target-sb" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
-            <div style="flex:1;">
-              <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-sb">—</div>
-              <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-sb">—</div>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revDaRisp-sb"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio come Booking</div>
+                <div class="rev5-big" onclick="openScoreTrend('sb')" title="Clicca per vedere l'andamento"><span id="rev-avg-sb">—</span><span class="rev5-sub" id="rev-avg-sub-sb"></span></div>
+                <div id="rev-target-sb"><div class="rev5-riga"><span id="rev-target-title-sb">—</span></div><div class="rev5-nota" id="rev-target-detail-sb"></div></div>
+                <div id="rev-margine-sb"></div>
+                <div id="rev-calib-sb"></div>
+              </div>
             </div>
-          </div>
-          <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
-          <div class="rev-cat-grid" id="revCatGrid-sb"></div>
-          <div id="rev-expiring-sb" style="display:block;margin-bottom:14px;"></div>
-          <div id="rev-impact-sb"></div>
-          <div id="rev-distrib-sb"></div>
-          <div class="panel" style="margin-bottom:14px;">
-            <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
-            <div class="panel-body" style="padding:14px;" id="revCatTrend-sb">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV per visualizzare</div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-noreply-sb">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="rev-noreply-sub-sb"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-count-sb">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="rev-count-sub-sb"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="rev-scad-n-sb">—</span><div><div class="inv5-pt">In scadenza</div><div class="inv5-ps" id="rev-scad-sub-sb"></div></div></div>
             </div>
+            <div id="rev-expiring-sb" class="rev5-scad"></div>
+            <div class="inv5-tutti"><div class="inv5-ll">Categorie · media pesata e andamento mensile</div><div class="inv5-tw" id="revCatTrend-sb"></div></div>
+            <details class="rev5-app"><summary>Come pesa la prossima recensione · distribuzione del peso · letture registrate</summary>
+              <div id="rev-impact-sb"></div>
+              <div id="rev-distrib-sb"></div>
+              <div id="rev-calib-det-sb"></div>
+            </details>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span id="revFascia-sb"></span></div>
           </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revFlt-sb-all" onclick="revToggleFilter('sb','all')">Tutte</button>
             <button class="rev-filter-btn" id="revFlt-sb-hi" onclick="revToggleFilter('sb','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revFlt-sb-mid" onclick="revToggleFilter('sb','mid')">7–9</button>
@@ -1072,7 +1079,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('sb',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revList-sb"></div>
+          <div class="rev-list rev5-lista" id="revList-sb"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-exp-sa">
@@ -1085,20 +1092,31 @@
         <div class="rc-processing" id="revExpProcessing-sa" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revExpError-sa" style="display:none"></div>
         <div id="revExpContent-sa" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)">SoulArt Hotel — Expedia / Hotels.com</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-sa"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-sa"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k">SoulArt Hotel · Expedia / Hotels.com<span id="revExpN-sa"></span> · <span id="revExpPeriod-sa"></span></div>
+                <div class="inv5-t" id="revExpVerdetto-sa">—</div>
+                <div class="rev5-ts" id="revExpTs-sa"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revExpReset('sa')">Carica altro file</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('sa')">Carica altro</button>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revExpDaRisp-sa"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio Expedia</div>
+                <div class="rev5-big" style="cursor:default"><span id="revExp-avg-sa">—</span><span class="rev5-sub" id="revExp-avg-sub-sa"></span></div>
+                <div id="revExp-righe-sa"></div>
+              </div>
+            </div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-noreply-sa">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="revExp-noreply-sub-sa"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-count-sa">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="revExp-count-sub-sa"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-basse-sa">—</span><div><div class="inv5-pt">Voti sotto 7</div><div class="inv5-ps" id="revExp-basse-sub-sa"></div></div></div>
+            </div>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Punteggio Expedia: media dei voti con più peso alle recensioni recenti, che contano di più via via che sono nuove. Le risposte iniziano sempre con «Gentile ospite» / «Dear Guest»: il nome dell'ospite non si usa, per scelta.</span></div>
           </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-sa" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-sa"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-sa">—</div><div class="kpi-delta up" id="revExp-count-sub-sa"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-sa">—</div><div class="kpi-delta down" id="revExp-noreply-sub-sa"></div></div>
-          </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revExpFlt-sa-all" onclick="revExpToggleFilter('sa','all')">Tutte</button>
             <button class="rev-filter-btn" id="revExpFlt-sa-hi" onclick="revExpToggleFilter('sa','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revExpFlt-sa-mid" onclick="revExpToggleFilter('sa','mid')">7–9</button>
@@ -1112,7 +1130,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('sa',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revExpList-sa"></div>
+          <div class="rev-list rev5-lista" id="revExpList-sa"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-exp-bh">
@@ -1125,20 +1143,31 @@
         <div class="rc-processing" id="revExpProcessing-bh" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revExpError-bh" style="display:none"></div>
         <div id="revExpContent-bh" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)">Boutique Hotel — Expedia / Hotels.com</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-bh"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-bh"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k">Boutique Hotel · Expedia / Hotels.com<span id="revExpN-bh"></span> · <span id="revExpPeriod-bh"></span></div>
+                <div class="inv5-t" id="revExpVerdetto-bh">—</div>
+                <div class="rev5-ts" id="revExpTs-bh"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revExpReset('bh')">Carica altro file</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('bh')">Carica altro</button>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revExpDaRisp-bh"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio Expedia</div>
+                <div class="rev5-big" style="cursor:default"><span id="revExp-avg-bh">—</span><span class="rev5-sub" id="revExp-avg-sub-bh"></span></div>
+                <div id="revExp-righe-bh"></div>
+              </div>
+            </div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-noreply-bh">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="revExp-noreply-sub-bh"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-count-bh">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="revExp-count-sub-bh"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-basse-bh">—</span><div><div class="inv5-pt">Voti sotto 7</div><div class="inv5-ps" id="revExp-basse-sub-bh"></div></div></div>
+            </div>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Punteggio Expedia: media dei voti con più peso alle recensioni recenti, che contano di più via via che sono nuove. Le risposte iniziano sempre con «Gentile ospite» / «Dear Guest»: il nome dell'ospite non si usa, per scelta.</span></div>
           </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-bh" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-bh"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-bh">—</div><div class="kpi-delta up" id="revExp-count-sub-bh"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-bh">—</div><div class="kpi-delta down" id="revExp-noreply-sub-bh"></div></div>
-          </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revExpFlt-bh-all" onclick="revExpToggleFilter('bh','all')">Tutte</button>
             <button class="rev-filter-btn" id="revExpFlt-bh-hi" onclick="revExpToggleFilter('bh','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revExpFlt-bh-mid" onclick="revExpToggleFilter('bh','mid')">7–9</button>
@@ -1152,7 +1181,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('bh',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revExpList-bh"></div>
+          <div class="rev-list rev5-lista" id="revExpList-bh"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-exp-sb">
@@ -1165,20 +1194,31 @@
         <div class="rc-processing" id="revExpProcessing-sb" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revExpError-sb" style="display:none"></div>
         <div id="revExpContent-sb" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)">Santa Brigida — Expedia / Hotels.com</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-sb"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-sb"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k">Santa Brigida · Expedia / Hotels.com<span id="revExpN-sb"></span> · <span id="revExpPeriod-sb"></span></div>
+                <div class="inv5-t" id="revExpVerdetto-sb">—</div>
+                <div class="rev5-ts" id="revExpTs-sb"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revExpReset('sb')">Carica altro file</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('sb')">Carica altro</button>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revExpDaRisp-sb"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio Expedia</div>
+                <div class="rev5-big" style="cursor:default"><span id="revExp-avg-sb">—</span><span class="rev5-sub" id="revExp-avg-sub-sb"></span></div>
+                <div id="revExp-righe-sb"></div>
+              </div>
+            </div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-noreply-sb">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="revExp-noreply-sub-sb"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-count-sb">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="revExp-count-sub-sb"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-basse-sb">—</span><div><div class="inv5-pt">Voti sotto 7</div><div class="inv5-ps" id="revExp-basse-sub-sb"></div></div></div>
+            </div>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Punteggio Expedia: media dei voti con più peso alle recensioni recenti, che contano di più via via che sono nuove. Le risposte iniziano sempre con «Gentile ospite» / «Dear Guest»: il nome dell'ospite non si usa, per scelta.</span></div>
           </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-sb" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-sb"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-sb">—</div><div class="kpi-delta up" id="revExp-count-sub-sb"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-sb">—</div><div class="kpi-delta down" id="revExp-noreply-sub-sb"></div></div>
-          </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revExpFlt-sb-all" onclick="revExpToggleFilter('sb','all')">Tutte</button>
             <button class="rev-filter-btn" id="revExpFlt-sb-hi" onclick="revExpToggleFilter('sb','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revExpFlt-sb-mid" onclick="revExpToggleFilter('sb','mid')">7–9</button>
@@ -1192,7 +1232,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('sb',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revExpList-sb"></div>
+          <div class="rev-list rev5-lista" id="revExpList-sb"></div>
         </div>
       </div>
       <div class="view" id="view-recensioni-exp-ar">
@@ -1205,20 +1245,31 @@
         <div class="rc-processing" id="revExpProcessing-ar" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
         <div class="rc-error" id="revExpError-ar" style="display:none"></div>
         <div id="revExpContent-ar" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div>
-              <span style="font-size:15px;font-weight:500;color:var(--text)">Art Resort — Expedia / Hotels.com</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-ar"></span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-ar"></span>
+          <div class="inv5-cornice">
+            <div class="inv5-hero">
+              <div>
+                <div class="inv5-k">Art Resort · Expedia / Hotels.com<span id="revExpN-ar"></span> · <span id="revExpPeriod-ar"></span></div>
+                <div class="inv5-t" id="revExpVerdetto-ar">—</div>
+                <div class="rev5-ts" id="revExpTs-ar"></div>
+              </div>
+              <button class="btn-ghost rev5-carica" onclick="revExpReset('ar')">Carica altro file</button>
             </div>
-            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('ar')">Carica altro</button>
+            <div class="inv5-griglia">
+              <div class="inv5-grande" id="revExpDaRisp-ar"></div>
+              <div class="inv5-lato">
+                <div class="inv5-ll">Punteggio Expedia</div>
+                <div class="rev5-big" style="cursor:default"><span id="revExp-avg-ar">—</span><span class="rev5-sub" id="revExp-avg-sub-ar"></span></div>
+                <div id="revExp-righe-ar"></div>
+              </div>
+            </div>
+            <div class="inv5-passi">
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-noreply-ar">—</span><div><div class="inv5-pt">Senza risposta</div><div class="inv5-ps" id="revExp-noreply-sub-ar"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-count-ar">—</span><div><div class="inv5-pt">Recensioni</div><div class="inv5-ps" id="revExp-count-sub-ar"></div></div></div>
+              <div class="inv5-passo"><span class="inv5-pn" id="revExp-basse-ar">—</span><div><div class="inv5-pt">Voti sotto 7</div><div class="inv5-ps" id="revExp-basse-sub-ar"></div></div></div>
+            </div>
+            <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Punteggio Expedia: media dei voti con più peso alle recensioni recenti, che contano di più via via che sono nuove. Le risposte iniziano sempre con «Gentile ospite» / «Dear Guest»: il nome dell'ospite non si usa, per scelta.</span></div>
           </div>
-          <div class="rev-kpi-grid">
-            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-ar" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-ar"></div></div>
-            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-ar">—</div><div class="kpi-delta up" id="revExp-count-sub-ar"></div></div>
-            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-ar">—</div><div class="kpi-delta down" id="revExp-noreply-sub-ar"></div></div>
-          </div>
-          <div class="rev-filter-bar">
+          <div class="rev-filter-bar rev5-filtri">
             <button class="rev-filter-btn active" id="revExpFlt-ar-all" onclick="revExpToggleFilter('ar','all')">Tutte</button>
             <button class="rev-filter-btn" id="revExpFlt-ar-hi" onclick="revExpToggleFilter('ar','hi')">≥ 9</button>
             <button class="rev-filter-btn" id="revExpFlt-ar-mid" onclick="revExpToggleFilter('ar','mid')">7–9</button>
@@ -1232,7 +1283,7 @@
             </select>
             <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('ar',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
-          <div class="rev-list" id="revExpList-ar"></div>
+          <div class="rev-list rev5-lista" id="revExpList-ar"></div>
         </div>
       </div>
       <div class="view" id="view-bkfsheet">
@@ -1675,7 +1726,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1205-20261128"></script>
+<script src="app.js?v=1206-20261128"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

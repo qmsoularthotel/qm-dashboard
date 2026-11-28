@@ -7625,6 +7625,70 @@ function weightedAvgF1(reviews, nowTs){
   const wt=reviews.reduce((s,r)=>s+Math.exp(-(nowTs-r._dateTs)/DECAY_F1_MS),0);
   return wt?ws/wt:null;
 }
+// ── Recensioni nella composizione della Registration Cards (QM, 28/11/2026) ──────────────
+// Le recensioni ancora da rispondere, dalla più recente: le stesse che conta «Senza risposta».
+// Booking conta anche quelle segnate «inviata» finché il CSV non porta la risposta (così il
+// numero resta quello di sempre), Expedia no (escludiInviate): ognuna come il suo contatore.
+function _revDaRispondere(data,chiave,inviate,escludiInviate){
+  return(data||[]).filter(r=>{
+    if(r._hasReply)return false;
+    const v=inviate?inviate[chiave(r)]:undefined;
+    if(v==='not_needed')return false;
+    if(escludiInviate&&v===true)return false;
+    return true;
+  }).sort((a,b)=>(b._dateTs||0)-(a._dateTs||0));
+}
+function _revVerdetto(n){
+  return n===0?'Tutte con risposta':n===1?'1 recensione da rispondere':n+' recensioni da rispondere';
+}
+function _revGg(d){
+  d=d instanceof Date?d:new Date(d);
+  return isNaN(d)?'—':d.getDate()+'/'+(d.getMonth()+1);
+}
+// Il riquadro grande «Da rispondere»: al massimo 6, poi «e altre N». Tocca il nome → la scheda.
+function _revDaRispHtml(p,lista,tipo){
+  if(!lista.length)return`<div class="inv5-centro" style="height:100%;min-height:228px"><span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span><div class="inv5-gt">Tutte le recensioni hanno una risposta</div><div class="inv5-gs">Quando ne arriva una nuova senza risposta, la trovi qui.</div></div>`;
+  const exp=tipo==='e';
+  const dati=exp?REV_EXP_HOTELS[p].data:REV_HOTELS[p].data;
+  const MAX=6;
+  const voce=r=>{
+    const s=r._score||0;
+    const nome=exp?(r['review_by']||'Ospite'):(r["Nome dell'ospite"]||'Ospite anonimo');
+    const tit=exp?r['review_title']:r['Titolo della recensione'];
+    const corpo=exp?r['review_text']:(r['Recensione negativa']||r['Recensione positiva']);
+    let riga=[tit?'«'+String(tit).trim()+'»':'',String(corpo||'').trim()].filter(Boolean).join(' · ');
+    if(!riga)riga='senza commento scritto';
+    if(riga.length>110)riga=riga.slice(0,108).trim()+'…';
+    const inviata=!exp&&REV_SENT[revUniqueKey(p,r)]===true;
+    return`<div class="inv5-voce rev5-voce" onclick="${exp?'revExpVai':'revVai'}('${p}',${dati.indexOf(r)})"><span class="inv5-num${s<7?' fin':''}">${s%1?s.toFixed(1):s}</span><div><div class="inv5-vt">${_esc(nome)} <span class="inv5-vq">· ${_revGg(r._date)}</span></div><div class="inv5-vs">${_esc(riga)}</div>${s<7?'<div class="inv5-urg">Voto basso: risposta con la linea difensiva</div>':''}${inviata?'<div class="inv5-vs inv5-blu">segnata inviata: manca ancora nel CSV</div>':''}</div></div>`;
+  };
+  return`<div class="inv5-gl">Da rispondere</div>${lista.slice(0,MAX).map(voce).join('')}${lista.length>MAX?`<div class="rev5-altre">e altre ${lista.length-MAX}: le trovi sotto, col filtro «Senza risposta».</div>`:'<div class="inv5-gs inv5-dopo">Tocca un nome per andare alla recensione e scrivere la risposta.</div>'}`;
+}
+// Va alla scheda della recensione: se i filtri la nascondono si torna a «Tutte».
+function revVai(p,gi){
+  const h=REV_HOTELS[p];const r=h.data[gi];if(!r)return;
+  if(h.filtered.indexOf(r)<0){try{revToggleFilter(p,'all');}catch(e){}}
+  if(h.filtered.indexOf(r)<0&&h.search){
+    h.search='';const q=document.querySelector('#view-recensioni-'+p+' input[type=search]');if(q)q.value='';
+    revApplyFilters(p);
+  }
+  const i=h.filtered.indexOf(r);if(i<0)return;
+  h.page=Math.floor(i/10);revRenderList(p);
+  const el=document.getElementById('revCard-'+p+'-'+gi);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function revExpVai(p,gi){
+  const h=REV_EXP_HOTELS[p];const r=h.data[gi];if(!r)return;
+  if(h.filtered.indexOf(r)<0){try{revExpToggleFilter(p,'all');}catch(e){}}
+  if(h.filtered.indexOf(r)<0&&h.search){
+    h.search='';const q=document.querySelector('#view-recensioni-exp-'+p+' input[type=search]');if(q)q.value='';
+    revExpApplyFilters(p);
+  }
+  const i=h.filtered.indexOf(r);if(i<0)return;
+  h.page=Math.floor(i/10);revExpRenderList(p);
+  const el=document.getElementById('revExpCard-'+p+'-'+gi);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
 const REV_CATS=['Staff','Pulizia','Posizione','Servizi','Comfort','Rapporto qualità/prezzo'];
 const REV_CAT_LABELS={'Rapporto qualità/prezzo':'Qualità/prezzo'};
 const catLabel=cat=>REV_CAT_LABELS[cat]||cat;
@@ -7793,13 +7857,25 @@ function revParseCsv(text){
   }
   return rows.sort((a,b)=>b._dateTs-a._dateTs);
 }
-const REV_TREND_CATS=['Staff','Pulizia','Servizi','Comfort','Rapporto qualità/prezzo'];
-const REV_TREND_COLORS=['#4A90D9','#27AE60','#E67E22','#9B59B6','#E74C3C'];
+// Categorie nella composizione della Registration Cards (QM, 28/11/2026): una tabella sola con
+// punteggio pesato (85/10/5, come prima: sono le sotto-voci, non IL punteggio), barra, ultimo mese
+// rispetto al precedente e la linea dei mesi. Prima erano due blocchi (schede + grafici). Tocca una
+// riga → il grafico grande (openCatModal), come toccare il grafico prima.
+const REV_CAT_COLORI={'Staff':'#4A90D9','Pulizia':'#27AE60','Posizione':'#16A085','Servizi':'#E67E22','Comfort':'#9B59B6','Rapporto qualità/prezzo':'#E74C3C'};
+function _revCatPesata(rev,cat,nowTs){
+  const avg=arr=>{const v=arr.map(r=>parseFloat(r[cat])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+  const gg=r=>(nowTs-r._dateTs)/86400000;
+  const a1=avg(rev.filter(r=>gg(r)<=365)),a2=avg(rev.filter(r=>gg(r)>365&&gg(r)<=730)),a3=avg(rev.filter(r=>gg(r)>730&&gg(r)<=1096));
+  let wT=0,wS=0;
+  if(a1!==null){wT+=0.85;wS+=0.85*a1;}
+  if(a2!==null){wT+=0.10;wS+=0.10*a2;}
+  if(a3!==null){wT+=0.05;wS+=0.05*a3;}
+  return wT>0?wS/wT:null;
+}
 function revRenderCatTrend(p){
   const data=REV_HOTELS[p].data;
   const el=document.getElementById('revCatTrend-'+p);
   if(!el||!data.length)return;
-  // Raggruppa per mese
   const byMonth={};
   data.forEach(r=>{
     if(!r._dateTs)return;
@@ -7809,103 +7885,36 @@ function revRenderCatTrend(p){
     byMonth[key].push(r);
   });
   const months=Object.keys(byMonth).sort();
-  if(months.length<2){
-    el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Servono almeno 2 mesi di dati</div>';
-    return;
-  }
   const mesiBrevi=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   const labels=months.map(m=>{const[y,mo]=m.split('-');return mesiBrevi[parseInt(mo)-1]+'\''+y.slice(2);});
-  function smoothPath(points,W,H){
-    if(points.length<2)return'';
-    let d=`M${points[0].x},${points[0].y}`;
-    for(let i=0;i<points.length-1;i++){
-      const p0=points[Math.max(0,i-1)];
-      const p1=points[i];
-      const p2=points[i+1];
-      const p3=points[Math.min(points.length-1,i+2)];
-      const cp1x=p1.x+(p2.x-p0.x)/6;
-      const cp1y=p1.y+(p2.y-p0.y)/6;
-      const cp2x=p2.x-(p3.x-p1.x)/6;
-      const cp2y=p2.y-(p3.y-p1.y)/6;
-      d+=` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-    }
-    return d;
-  }
-  function makeCatCard(cat, color){
+  window['_revMonths_'+p]=months;
+  window['_revByMonth_'+p]=byMonth;
+  window['_revLabels_'+p]=labels;
+  const nowTs=Date.now();
+  const scored=data.filter(r=>r._score>0);
+  const righe=REV_CATS.map(cat=>{
+    const pes=_revCatPesata(scored,cat,nowTs);
+    if(pes===null)return'';
     const vals=months.map(m=>{
       const v=byMonth[m].map(r=>parseFloat(r[cat])).filter(v=>!isNaN(v)&&v>0);
       return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;
     });
-    const validVals=vals.filter(v=>v!==null);
-    if(!validVals.length)return'';
-    // Calcolo ponderato 85/10/5 su tutte le recensioni (non per mese)
-    const nowTs=Date.now();
-    function catWeighted85(){
-      const allRevs=Object.values(byMonth).flat();
-      const f1=allRevs.filter(r=>(nowTs-r._dateTs)/86400000<=365);
-      const f2=allRevs.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>365&&d<=730;});
-      const f3=allRevs.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>730&&d<=1096;});
-      const avg=arr=>{const v=arr.map(r=>parseFloat(r[cat])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
-      const a1=avg(f1),a2=avg(f2),a3=avg(f3);
-      let wT=0,wS=0;
-      if(a1!==null){wT+=0.85;wS+=0.85*a1;}
-      if(a2!==null){wT+=0.10;wS+=0.10*a2;}
-      if(a3!==null){wT+=0.05;wS+=0.05*a3;}
-      return wT>0?wS/wT:null;
+    const validi=vals.filter(v=>v!==null);
+    const last=validi.length?validi[validi.length-1]:null;
+    const prev=validi.length>1?validi[validi.length-2]:null;
+    const tr=prev!==null?last-prev:0;
+    const trHtml=prev===null?'':tr>0.1?`<span class="rev5-su">▲${tr.toFixed(1)}</span>`:tr<-0.1?`<span class="rev5-giu">▼${Math.abs(tr).toFixed(1)}</span>`:'<span class="rev5-pari">=</span>';
+    let spark='';
+    if(validi.length>1){
+      const W=130,H=22,lo=Math.min(...validi)-.2,hi=Math.max(...validi)+.2,rg=(hi-lo)||1;
+      const pts=vals.map((v,i)=>v===null?null:[(i/(months.length-1))*(W-4)+2,H-2-(v-lo)/rg*(H-4)]).filter(Boolean);
+      spark=`<svg class="rev5-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
     }
-    const weightedScore=catWeighted85();
-    const displayScore=weightedScore!==null?weightedScore:validVals[validVals.length-1];
-    const last=validVals[validVals.length-1]; // ultimo mese per trend
-    const prev=validVals.length>1?validVals[validVals.length-2]:null;
-    const trend=prev!==null?last-prev:0;
-    const trendIcon=trend>0.1?'▲':trend<-0.1?'▼':'→';
-    const trendColor=trend>0.1?'var(--green)':trend<-0.1?'var(--red)':'var(--text-dim)';
-    const scoreColor=displayScore>=9?'var(--green)':displayScore>=7.5?'var(--amber)':'var(--red)';
-    const W=220,H=60,PL=4,PR=4,PT=6,PB=18;
-    const plotW=W-PL-PR,plotH=H-PT-PB;
-    const minY=Math.max(0,Math.min(...validVals)-0.5);
-    const maxY=Math.min(10,Math.max(...validVals)+0.5);
-    const rng=maxY-minY||1;
-    const points=vals.map((v,i)=>{
-      if(v===null)return null;
-      return{x:PL+i/(months.length-1)*plotW, y:PT+plotH-(v-minY)/rng*plotH};
-    }).filter(Boolean);
-    const path=smoothPath(points);
-    const areaClose=`L${points[points.length-1].x},${PT+plotH} L${points[0].x},${PT+plotH} Z`;
-    let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:60px;">`;
-    // Area fill
-    svg+=`<path d="${path} ${areaClose}" fill="${color}" opacity="0.08"/>`;
-    // Linea
-    svg+=`<path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
-    // Punti
-    points.forEach((pt,i)=>{
-      svg+=`<circle cx="${pt.x}" cy="${pt.y}" r="2.5" fill="${color}" stroke="white" stroke-width="1.2"/>`;
-    });
-    // Labels mesi sull'asse X (solo primo e ultimo)
-    svg+=`<text x="${PL}" y="${H-2}" font-size="8" fill="var(--text-dim)">${labels[0]}</text>`;
-    svg+=`<text x="${W-PR}" y="${H-2}" font-size="8" fill="var(--text-dim)" text-anchor="end">${labels[labels.length-1]}</text>`;
-    svg+='</svg>';
-    return`<div class="panel" style="min-width:180px;cursor:pointer;transition:box-shadow .15s;" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,.12)'" onmouseleave="this.style.boxShadow=''" onclick="openCatModal('${cat}','${color}',_revMonths_${p},_revByMonth_${p},_revLabels_${p})">
-      <div class="panel-header" style="border-bottom:none;padding-bottom:4px;">
-        <span class="panel-title" style="font-size:var(--fs-xs);color:${color};">${catLabel(cat)}</span>
-        <span style="margin-left:auto;font-size:9px;color:var(--text-dim);">⤢</span>
-      </div>
-      <div style="padding:0 14px 4px;">
-        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;">
-          <span style="font-size:22px;font-weight:700;color:${scoreColor};">${displayScore.toFixed(1)}</span>
-          <span style="font-size:11px;color:${trendColor};font-weight:600;">${trendIcon} ${Math.abs(trend).toFixed(1)}</span>
-          <span style="font-size:9px;color:var(--text-dim);margin-left:auto;">ult. mese ${last.toFixed(1)}</span>
-        </div>
-        ${svg}
-      </div>
-    </div>`;
-  }
-  const cards=REV_TREND_CATS.map((cat,i)=>makeCatCard(cat,REV_TREND_COLORS[i])).filter(Boolean);
-  // Salva dati globali per il modal
-  window['_revMonths_'+p]=months;
-  window['_revByMonth_'+p]=byMonth;
-  window['_revLabels_'+p]=labels;
-  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">${cards.join('')}</div>`;
+    const col=REV_CAT_COLORI[cat]||'#1c3a5e';
+    const apri=months.length>1?` onclick="openCatModal('${cat}','${col}',_revMonths_${p},_revByMonth_${p},_revLabels_${p})" title="Tocca per il grafico mese per mese"`:'';
+    return`<tr class="${apri?'rev5-cat':''}"${apri}><td>${catLabel(cat)}</td><td class="r"><b class="${pes<7.5?'inv5-rosso':''}">${pes.toFixed(1)}</b></td><td><span class="rev5-bar"><i style="width:${Math.max(0,Math.min(100,(pes-5)*20)).toFixed(0)}%"></i></span></td><td class="r">${last!==null?last.toFixed(1)+' '+trHtml:'—'}</td><td>${spark||'<span class="inv5-no">servono 2 mesi</span>'}</td></tr>`;
+  }).join('');
+  el.innerHTML=`<table class="inv5-tab rev5-tab"><thead><tr><th>Categoria</th><th class="r">Punteggio</th><th></th><th class="r">Ultimo mese</th><th>Mese per mese${labels.length>1?' · '+labels[0]+' – '+labels[labels.length-1]:''}</th></tr></thead><tbody>${righe}</tbody></table>`;
 }
 function revRenderExpiring(p){
   const data=REV_HOTELS[p].data;
@@ -8033,14 +8042,15 @@ function revRenderExpiring(p){
   const _expQuota=allExpiring.reduce((acc,r)=>acc+revPesoDi(_expPb,(nowTs-r._dateTs)/86400000),0);
   const _expDelta=(scoreAttuale!==null&&scoreAfterBoth!==null)?Math.abs(scoreAfterBoth-scoreAttuale):0;
   const _expInvisibile=scoreAttuale===null||(_expDelta<0.01&&Math.round(scoreAttuale*10)===Math.round(scoreAfterBoth*10));
+  // Riquadro «In scadenza» (QM, 28/11/2026): il numero e una riga; il pannello grande solo quando
+  // le uscite spostano davvero la cifra.
+  const _sN=document.getElementById('rev-scad-n-'+p),_sS=document.getElementById('rev-scad-sub-'+p);
+  if(_sN)_sN.textContent=allExpiring.length;
+  if(_sS)_sS.textContent=allExpiring.length===0?'nessuna smette di contare questa o la prossima settimana'
+    :_expInvisibile?'smettono di contare fra oggi e la prossima settimana: la cifra non cambia'
+    :'smettono di contare fra oggi e la prossima settimana: la cifra cambia, vedi sotto';
   if(_expInvisibile){
-    el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.5;">
-      ${_ovIcona('clessidra')}
-      <span style="flex:1;min-width:220px;">${allExpiring.length===0
-        ?`<strong style="color:var(--text);">Nessuna recensione in scadenza</strong> questa o la prossima settimana.`
-        :`<strong style="color:var(--text);">${allExpiring.length} recension${allExpiring.length===1?'e in scadenza':'i in scadenza'}</strong> questa/prossima settimana, ma pesano solo il <strong style="color:var(--text);">${(_expQuota*100).toFixed(2)}%</strong> del punteggio: uscendo lo sposterebbero di ${_expDelta<0.005?'meno di 0,01':_expDelta.toFixed(3)}, invisibile sul valore mostrato da Booking.`}
-        <span style="color:var(--text-dim);">Una recensione smette di contare a ${Math.round(revFinestraUtile(REV_PESI_ANNI)/365)*12} mesi, quando è già nella fascia che vale il ${Math.round(REV_PESI_ANNI[Math.round(revFinestraUtile(REV_PESI_ANNI)/365)-1]*100)}%: la leva vera è il voto medio dell'ultimo anno.</span></span>
-    </div>`;
+    el.innerHTML='';
     return;
   }
   let html=`<div class="panel">
@@ -8496,24 +8506,26 @@ function revRenderCalib(p,pb){
     </div>
   </div>`:'';
   const pesiTxt=REV_PESI_ANNI.map(w=>Math.round(w*100)+'%').join(' · ');
-  el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1 1 240px;min-width:200px;">
-        <label for="revCalibIn-${p}" style="display:block;font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:2px;">Punteggio Booking reale</label>
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);">lo trovi in cima a Extranet → Recensioni · registralo <strong>ogni volta che cambia</strong>: serve a controllare che Compass calcoli come Booking</div>
-      </div>
-      <input id="revCalibIn-${p}" type="number" step="0.1" min="1" max="10" inputmode="decimal"
-        value="" placeholder="es. 8.9"
-        onchange="revCalibInput('${p}',this.value)"
-        style="width:92px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-sm);font-weight:700;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;">
-      ${badge}
+  // Composizione Registration Cards (QM, 28/11/2026): nel riquadro del punteggio solo la casella,
+  // il verdetto della verifica e l'avviso; registro delle letture e spiegazione nella riga che si
+  // apre in fondo (rev-calib-det).
+  const bCls=!ver||!ver.nTot?'vuoto':ver.nOk===ver.nTot?'ok':(ver.nOk/ver.nTot>=0.7?'mah':'no');
+  const bTxt=!ver||!ver.nTot?(cs.oss.length?'letture in attesa del CSV':'nessuna lettura'):`Compass = Booking in ${ver.nOk} letture su ${ver.nTot}`;
+  el.innerHTML=`<div class="rev5-in">
+      <input id="revCalibIn-${p}" type="number" step="0.1" min="1" max="10" inputmode="decimal" value="" placeholder="es. 8.9" onchange="revCalibInput('${p}',this.value)">
+      <label for="revCalibIn-${p}">Il punteggio vero di Extranet → Recensioni: registralo ogni volta che cambia, serve a verificare il calcolo</label>
     </div>
-    ${avviso}
-    ${ossHtml}
+    <div style="margin-top:8px"><span class="rev5-badge ${bCls}">${bTxt}</span></div>
+    ${avviso.replace(/style="margin-top:8px;background:var\(--amber-bg\);color:var\(--amber\);border-radius:7px;padding:10px 13px;font-size:var\(--fs-xs\);line-height:1.6;"/,'class="rev5-avviso"').replace(/style="margin-top:8px;background:var\(--surface\);color:var\(--text-muted\);border:1px solid var\(--border-light\);border-radius:7px;padding:9px 12px;font-size:var\(--fs-xs\);line-height:1.5;"/,'class="rev5-avviso grigio"')}`;
+  const det=document.getElementById('rev-calib-det-'+p);
+  if(det)det.innerHTML=`<div class="panel" style="margin-bottom:0;">
+    <div class="panel-header"><span class="panel-title">Punteggio Booking reale · letture registrate</span></div>
+    <div class="panel-body" style="padding:14px;">
+    ${ossHtml||'<div style="font-size:var(--fs-xs);color:var(--text-muted);">Nessuna lettura registrata: scrivi il punteggio di Extranet nella casella in alto a destra.</div>'}
     <div style="margin-top:8px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;">
       Come Booking: <strong style="color:var(--text);">media dei voti di ogni anno</strong>, poi le tre medie pesate <strong style="color:var(--text);">${pesiTxt}</strong> (ultimi 12 mesi · 12–24 mesi · 24–36 mesi). ${REV_PESI_ANNI[2]>0?'Dopo 36 mesi la recensione esce.':'Dopo 24 mesi la recensione non conta più.'} ${pb&&pb.anni?`Qui: ${pb.anni[0].n+pb.anni[1].n+(REV_PESI_ANNI[2]>0?pb.anni[2].n:0)} recensioni che contano, ${pb.anni[0].n} nell'ultimo anno.`:''}
-      <span style="display:block;margin-top:6px;">Booking non pubblica la formula: questa è quella ricostruita da uno studio universitario del 2025, con i pesi ricavati dalle letture vere delle nostre 7 strutture. Fra il 3 e il 9 ottobre 2026 Booking ha cambiato i pesi (prima 90 · 6 · 4): ogni lettura qui sopra è verificata coi pesi in vigore quel giorno. Il ✓ e la ✗ dicono, lettura per lettura, se coincide.</span>
-    </div>
+      <span style="display:block;margin-top:6px;">Booking non pubblica la formula: questa è quella ricostruita da uno studio universitario del 2025, con i pesi ricavati dalle letture vere delle nostre 7 strutture. Fra il 3 e il 9 ottobre 2026 Booking ha cambiato i pesi (prima 90 · 6 · 4): ogni lettura è verificata coi pesi in vigore quel giorno. Il ✓ e la ✗ dicono, lettura per lettura, se coincide.</span>
+    </div></div>
   </div>`;
 }
 
@@ -8523,8 +8535,9 @@ function revRenderCalib(p,pb){
 // molto più di un voto pieno, perché la media è già alta.
 function revRenderImpact(p,pb,scored,oggiTs){
   const el=document.getElementById('rev-impact-'+p);
+  const elM=document.getElementById('rev-margine-'+p);
   if(!el)return;
-  if(pb.score===null){el.innerHTML='';return;}
+  if(pb.score===null){el.innerHTML='';if(elM)elM.innerHTML='';return;}
   const delta=v=>revConNuove(pb,v)-pb.score;
   const d10=delta(10),d5=delta(5);
   const rapporto=d10>0?Math.abs(d5)/d10:null;
@@ -8577,6 +8590,10 @@ function revRenderImpact(p,pb,scored,oggiTs){
     ${allerta?`<div style="margin-top:5px;color:var(--red);font-weight:600;">Margine sottile: basta una recensione mediocre per far scendere la cifra mostrata.</div>`:''}
     ${votoSicuro!==null?`<div style="margin-top:5px;color:var(--text-muted);">${votoSicuro<=1?'Anche un 1 non farebbe scendere la cifra.':`Fino a un <strong style="color:var(--text);">${votoSicuro}</strong> resti a ${displayOra.toFixed(1)}; da <strong style="color:var(--red);">${votoSicuro-1}</strong> in giù scende.`}</div>`:`<div style="margin-top:5px;color:var(--red);font-weight:600;">Qualunque voto in arrivo fa scendere la cifra mostrata.</div>`}
   </div>`;
+  // Nel riquadro del punteggio (QM, 28/11/2026): margine e voto che non fa scendere la cifra.
+  if(elM)elM.innerHTML=`<div class="rev5-riga${allerta?' rosso':''}"><span>Margine sulla soglia ${soglia.toFixed(2)}</span><b>${margine>=0?'+':'−'}${Math.abs(margine).toFixed(3)}</b></div>
+    <div class="rev5-riga${votoSicuro===null||votoSicuro>=8?' rosso':''}"><span>${votoSicuro===null?'Qualunque voto in arrivo':votoSicuro<=1?'Anche con un 1':'Resta a '+displayOra.toFixed(1)+' fino a un'}</span><b>${votoSicuro===null?'la fa scendere':votoSicuro<=1?'resta '+displayOra.toFixed(1):votoSicuro}</b></div>
+    <div class="rev5-riga"><span>Ultimi 12 mesi</span><b>${pb.anni[0].n} recensioni · ${Math.round(REV_PESI_ANNI[0]*100)}%</b></div>`;
   const n1=pb.anni[0].n;
   el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
     <div class="panel-header"><span class="panel-title">Impatto della prossima recensione</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">${n1} recensioni nell'ultimo anno</span></div>
@@ -8676,37 +8693,25 @@ function revRenderStats(p){
     nrBtn.style.color=noReply>0&&!nrBtn.classList.contains('active')?'var(--amber)':'';
   }
   const g=id=>document.getElementById(id+'-'+p);
+  const daR=_revDaRispondere(data,r=>revUniqueKey(p,r),REV_SENT);
   g('rev-avg').textContent=revDisplay(avgWeighted).toFixed(1);
   const _ver=revVerificaStruttura(p);
-  g('rev-avg-sub').textContent=avgWeighted.toFixed(3)+' · come Booking (anni '+pesi.map(w=>Math.round(w*100)).join('/')+')'+(_ver.nTot?' · verificato '+_ver.nOk+'/'+_ver.nTot:'')+' · media semplice '+avgSimple.toFixed(1);
+  g('rev-avg-sub').textContent=avgWeighted.toFixed(3)+' · anni '+pesi.map(w=>Math.round(w*100)).filter(x=>x>0).join('/')+(_ver.nTot?' · verificato '+_ver.nOk+'/'+_ver.nTot:'')+' · media semplice '+avgSimple.toFixed(1);
   const avgCard=g('rev-avg');
   if(avgCard&&avgCard.closest('.kpi-card'))avgCard.closest('.kpi-card').title='Calcolato come Booking: media dei voti di ogni anno, pesata '+pesi.map(w=>Math.round(w*100)+'%').join(' / ')+'. Clicca per vedere l\u2019andamento.';
   g('rev-count').textContent=data.length;
   // Quante stanno nell'ultimo anno: è lì che sta la parte più grossa del punteggio (70%).
-  g('rev-count-sub').textContent=data.length+' importate · '+pb.anni[0].n+' negli ultimi 12 mesi';
+  g('rev-count-sub').textContent=pb.anni[0].n+' negli ultimi 12 mesi, che fanno il '+Math.round(pesi[0]*100)+'% del punteggio';
   g('rev-noreply').textContent=noReply;
-  g('rev-noreply-sub').textContent=noReply>0?noReply+' in attesa di risposta':'Tutte con risposta';
+  g('rev-noreply-sub').textContent=noReply>0?(daR.length?'la più vecchia è del '+_revGg(daR[daR.length-1]._date):noReply+' in attesa di risposta'):'tutte con risposta';
   const dates=data.map(r=>r._date).filter(d=>!isNaN(d));
   if(dates.length){const fmt=d=>d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();g('revPeriod').textContent=fmt(new Date(Math.min(...dates)))+' – '+fmt(new Date(Math.max(...dates)));}
-  g('revCatGrid').innerHTML=REV_CATS.map(cat=>{
-    // Calcolo ponderato 85/10/5 per categoria
-    function catWeighted(reviewSet){
-      const f1=reviewSet.filter(r=>(now-r._dateTs)/(86400000)<=365);
-      const f2=reviewSet.filter(r=>{const d=(now-r._dateTs)/86400000;return d>365&&d<=730;});
-      const f3=reviewSet.filter(r=>{const d=(now-r._dateTs)/86400000;return d>730&&d<=1096;});
-      const avg=arr=>{const v=arr.map(r=>parseFloat(r[cat])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
-      const a1=avg(f1),a2=avg(f2),a3=avg(f3);
-      let wT=0,wS=0;
-      if(a1!==null){wT+=0.85;wS+=0.85*a1;}
-      if(a2!==null){wT+=0.10;wS+=0.10*a2;}
-      if(a3!==null){wT+=0.05;wS+=0.05*a3;}
-      return wT>0?wS/wT:null;
-    }
-    const a=catWeighted(scored);
-    if(a===null)return'';
-    const color=a>=9?'var(--green)':a>=7.5?'var(--amber)':'var(--red)';
-    return`<div class="rev-cat-card"><div class="rev-cat-label">${catLabel(cat)}</div><div class="rev-cat-val" style="color:${color}">${a.toFixed(1)}</div><div class="rev-cat-bar"><div class="rev-cat-fill" style="width:${a/10*100}%;background:${color}"></div></div></div>`;
-  }).join('');
+  // Composizione Registration Cards (QM, 28/11/2026): titolo-verdetto, «Da rispondere», fascia.
+  // Le categorie stanno nella tabella di revRenderCatTrend (prima: schede qui + grafici là).
+  const verd=g('revVerdetto');if(verd)verd.textContent=_revVerdetto(daR.length);
+  const nEl=g('revN');if(nEl)nEl.textContent=' · '+data.length+' recensioni';
+  const dr=g('revDaRisp');if(dr)dr.innerHTML=_revDaRispHtml(p,daR,'b');
+  const fz=g('revFascia');if(fz)fz.textContent=`Punteggio come Booking: media dei voti di ogni anno, pesata ${pesi.map(w=>Math.round(w*100)+'%').filter(x=>x!=='0%').join(' l\'ultimo anno e ')} il secondo; ${pesi[2]>0?'dopo 36 mesi la recensione esce':'dopo 24 mesi una recensione non conta più'}. Un voto basso pesa molto più di un 10: conta soprattutto intercettare l'ospite scontento.`;
   // Calcolo target: quante recensioni con score 10 (o 9) servono per salire di 0.1
   // Formula: aggiunge N nuove recensioni in fascia 1 (ultimi 12m) e ricalcola
   const targetEl=document.getElementById('rev-target-'+p);
@@ -8740,7 +8745,7 @@ function revRenderStats(p){
     const sim10=revSimulaTarget(scored,pesi,target,10,ritmo,now);
     const sim9=revSimulaTarget(scored,pesi,target,9,ritmo,now);
     const mesi=g_=>g_<30?`${g_} giorni`:(g_<365?`~${Math.round(g_/30)} mesi`:`~${(g_/365).toFixed(1)} anni`);
-    targetEl.style.display='flex';
+    targetEl.style.display='block';
     if(sim10.raggiungibile&&sim10.nRec===0){
       targetTitle.textContent=`Score già a ${displayScore.toFixed(1)} — ottimo!`;
       targetDetail.textContent=expiringNote||'';
@@ -8788,8 +8793,6 @@ function revRenderList(p){
     const s=r._score;
     const cls=s>=9?'rev-score-hi':s>=7?'rev-score-mid':'rev-score-lo';
     const scoreColor=s>=9?'var(--green)':s>=7?'var(--amber)':'var(--red)';
-    const R=14,circ=2*Math.PI*R,arc=Math.min(s/10,1)*circ;
-    const scoreSvg=`<svg width="40" height="40" viewBox="0 0 40 40" style="flex-shrink:0;"><circle cx="20" cy="20" r="${R}" fill="none" stroke="var(--border-light)" stroke-width="2.5"/><circle cx="20" cy="20" r="${R}" fill="none" stroke="${scoreColor}" stroke-width="2.5" stroke-dasharray="${arc.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 20 20)"/><text x="20" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="${scoreColor}" font-family="Helvetica Neue,Arial,sans-serif">${s.toFixed(1)}</text></svg>`;
     const d=r._date;
     const dateStr=isNaN(d)?'—':(d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear());
     const bookingNum=r['Numero di prenotazione']||r['Reservation number']||'';
@@ -8829,8 +8832,9 @@ function revRenderList(p){
           <span class="rev-char-count" id="rcc-${uid}"></span>
         </div>
       </div>`:(isSent||isNotNeeded)?`<div style="margin-top:6px;">${sentBadge}</div>`:'';
-    return`<div class="rev-card">
-      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${_esc(r["Nome dell'ospite"])||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span>${bookingBadge}</div>
+    // Voto nel cerchio navy/oro (rosso sotto 7) e filo oro a sinistra se aspetta risposta (QM, 28/11/2026).
+    return`<div class="rev-card${(!r._hasReply&&!isNotNeeded)?' rev5-da':''}" id="revCard-${uid}">
+      <div class="rev-card-header"><span class="inv5-num${s<7?' fin':''}">${s%1?s.toFixed(1):s}</span><span class="rev-guest">${_esc(r["Nome dell'ospite"])||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span>${bookingBadge}</div>
       ${r['Titolo della recensione']?`<div class="rev-title"><span id="revTitleTxt-${uid}">${_esc(r['Titolo della recensione'])}</span></div>`:''}
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${catMini}</div>
       <div class="rev-body" id="revBody-${uid}">${pos}${neg}</div>${translateBtn}${reply}${replyPanel}
@@ -13000,22 +13004,41 @@ function revExpRenderStats(p){
   const data=h.data;
   if(!data.length)return;
   const now=Date.now();
+  const g=id=>document.getElementById(id+'-'+p);
   const avg=weightedAvgF1(data,now);
-  document.getElementById('revExp-avg-'+p).textContent=avg?avg.toFixed(1):'—';
-  document.getElementById('revExp-count-'+p).textContent=data.length;
+  g('revExp-avg').textContent=avg?avg.toFixed(1):'—';
+  g('revExp-count').textContent=data.length;
   // Date range
   const dates=data.map(r=>r._dateTs).filter(Boolean);
   if(dates.length){
     const fmt=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
-    document.getElementById('revExpPeriod-'+p).textContent=fmt(Math.min(...dates))+' – '+fmt(Math.max(...dates));
+    g('revExpPeriod').textContent=fmt(Math.min(...dates))+' – '+fmt(Math.max(...dates));
   }
-  // No-reply count
-  const noreply=data.filter(r=>{
-    if(r._hasReply)return false;
-    const k=revExpUniqueKey(p,r);
-    return REV_SENT[k]!==true&&REV_SENT[k]!=='not_needed';
-  }).length;
-  document.getElementById('revExp-noreply-'+p).textContent=noreply;
+  // Senza risposta: stesso criterio di sempre (fuori anche quelle segnate inviate).
+  const daR=_revDaRispondere(data,r=>revExpUniqueKey(p,r),REV_SENT,true);
+  const noreply=daR.length;
+  g('revExp-noreply').textContent=noreply;
+  // Composizione Registration Cards (QM, 28/11/2026).
+  const set=(id,t)=>{const e=g(id);if(e)e.textContent=t;};
+  set('revExpVerdetto',_revVerdetto(noreply));
+  set('revExpN',' · '+data.length+' recensioni');
+  set('revExp-noreply-sub',noreply?'la più vecchia è del '+_revGg(daR[daR.length-1]._date):'tutte con risposta');
+  const anno=data.filter(r=>r._dateTs&&now-r._dateTs<=365*86400000);
+  set('revExp-count-sub',anno.length+' negli ultimi 12 mesi');
+  const basse=anno.filter(r=>r._score>0&&r._score<7);
+  set('revExp-basse',basse.length);
+  set('revExp-basse-sub',basse.length?'negli ultimi 12 mesi, l\'ultima il '+_revGg(basse[0]._date):'nessuna negli ultimi 12 mesi');
+  const dr=g('revExpDaRisp');if(dr)dr.innerHTML=_revDaRispHtml(p,daR,'e');
+  const voti=data.filter(r=>r._score>0).map(r=>r._score);
+  const semplice=voti.length?voti.reduce((a,b)=>a+b,0)/voti.length:null;
+  set('revExp-avg-sub',(avg?avg.toFixed(3):'—')+' · più peso alle recenti'+(semplice!==null?' · media semplice '+semplice.toFixed(1):''));
+  const media=arr=>{const v=arr.filter(r=>r._score>0).map(r=>r._score);return v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1):'—';};
+  const exp=data.filter(r=>r._brand!=='Hotels'),hot=data.filter(r=>r._brand==='Hotels');
+  const righe=g('revExp-righe');
+  if(righe)righe.innerHTML=`<div class="rev5-riga"><span>Media ultimi 12 mesi</span><b>${media(anno)} · ${anno.length} recensioni</b></div>
+    <div class="rev5-riga"><span>Expedia</span><b>${exp.length} · media ${media(exp)}</b></div>
+    <div class="rev5-riga"><span>Hotels.com</span><b>${hot.length} · media ${media(hot)}</b></div>
+    <div class="rev5-nota">Il punteggio di Expedia dà più peso alle recensioni recenti: una di nove mesi fa conta circa un terzo di una di oggi.</div>`;
 }
 
 function revExpApplyFilters(p){
@@ -13085,8 +13108,6 @@ function revExpRenderList(p){
     const uid=p+'-'+gi;
     const s=r._score;
     const scoreColor=s>=9?'var(--green)':s>=7?'var(--amber)':'var(--red)';
-    const R=14,circ=2*Math.PI*R,arc=Math.min(s/10,1)*circ;
-    const scoreSvg=`<svg width="40" height="40" viewBox="0 0 40 40" style="flex-shrink:0;"><circle cx="20" cy="20" r="${R}" fill="none" stroke="var(--border-light)" stroke-width="2.5"/><circle cx="20" cy="20" r="${R}" fill="none" stroke="${scoreColor}" stroke-width="2.5" stroke-dasharray="${arc.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 20 20)"/><text x="20" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="${scoreColor}" font-family="Helvetica Neue,Arial,sans-serif">${s.toFixed(1)}</text></svg>`;
     const d=r._date;
     const dateStr=isNaN(d)?'—':(d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear());
     const brandColor=r._brand==='Hotels'?'#FF5A00':'#FFC200';
@@ -13123,8 +13144,8 @@ function revExpRenderList(p){
           <span class="rev-char-count" id="recc-${uid}"></span>
         </div>
       </div>`:(isSent||isNotNeeded)?`<div style="margin-top:6px;">${sentBadge}</div>`:'';
-    return`<div class="rev-card">
-      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${_esc(r['review_by'])||'Ospite anonimo'}</span>${brandBadge}${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span></div>
+    return`<div class="rev-card${(!r._hasReply&&!isNotNeeded&&!isSent)?' rev5-da':''}" id="revExpCard-${uid}">
+      <div class="rev-card-header"><span class="inv5-num${s<7?' fin':''}">${s%1?s.toFixed(1):s}</span><span class="rev-guest">${_esc(r['review_by'])||'Ospite anonimo'}</span>${brandBadge}${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span></div>
       ${r['review_title']?`<div class="rev-title">${_esc(r['review_title'])}</div>`:''}
       ${reviewHtml}${replyHtml}${replyPanel}
     </div>`;
