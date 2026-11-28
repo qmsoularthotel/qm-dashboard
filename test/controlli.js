@@ -3718,7 +3718,7 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   var h=box.innerHTML,i=h.indexOf('class="ag-week"'),sett=h.slice(i);
   ok('il giorno previsto mostra dove e\' andato',   /ag-spostato[\s\S]*spostato al gio 5 nov[\s\S]*Chiamare Raimondo/.test(sett), true);
   ok('oggi dice da quando era previsto',            /ag-da">previsto mar 3 nov/.test(sett), true);
-  ok('il rimasto indietro resta nel suo giorno',    /ag-ritardo[\s\S]*Firmare DDT<span class="ag-sotto"><span class="ag-quando">in ritardo/.test(sett), true);
+  ok('il rimasto indietro resta nel suo giorno',    /ag-ritardo[\s\S]*Firmare DDT<\/span><span class="ag-sotto"><span class="ag-quando">in ritardo/.test(sett), true);
   ok('niente piu\' riquadro "Rimasti indietro"',  /Rimasti indietro|agTuttiAOggi/.test(h), false);
   // La freccia chiede il giorno: 14 giorni (questa settimana e la prossima), e il ritorno al previsto.
   var sc=_agScelta({id:'p',giorno:oggi,previsto:'2026-11-03',fatto:false},oggi);
@@ -3736,7 +3736,7 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   ok('e di nuovo non evaso',                        !v.fatto&&!('previsto' in v)&&v.giorno<_agOggi(), true);
   document.getElementById=function(id){return id==='agenda-content'?box:null;};
   try{_agLunedi='2026-11-02';agRender();}finally{document.getElementById=ge;_agLunedi=lu;}
-  ok('e torna rosso, in ritardo',                   /ag-ritardo[\s\S]*Torna indietro<span class="ag-sotto"><span class="ag-quando">in ritardo/.test(box.innerHTML), true);
+  ok('e torna rosso, in ritardo',                   /ag-ritardo[\s\S]*Torna indietro<\/span><span class="ag-sotto"><span class="ag-quando">in ritardo/.test(box.innerHTML), true);
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 
@@ -3780,7 +3780,7 @@ sez('Agenda: ordine degli impegni a mano');
   ok('a destra un solo pulsante (⋯)',               (r1.match(/class="ag-ico[ "]/g)||[]).length, 1);
   ok('niente piu\' frecce nella riga',              /agSuGiu|agScegliGiorno|agElimina/.test(r1), false);
   ok('la maniglia prende l\'impegno',               /ag-maniglia" onpointerdown="agPrendi\(event,'q'\)"/.test(r1), true);
-  ok('le pillole vanno sotto il testo',             /INSERIMENTO C59<span class="ag-sotto"><span class="ag-quando">in ritardo<\/span><span class="ag-da">previsto/.test(r1), true);
+  ok('le pillole vanno sotto il testo',             /INSERIMENTO C59<\/span><span class="ag-sotto"><span class="ag-quando">in ritardo<\/span><span class="ag-da">previsto/.test(r1), true);
   var r2=_agRiga({id:'q',giorno:g,testo:'fatto',fatto:true},false);
   ok('un fatto non ha la maniglia',                 /agPrendi/.test(r2), false);
   // Il menu ⋯: Sposta, Modifica, Elimina.
@@ -4897,3 +4897,8 @@ if (typeof renderDay === 'function') (function () {
   }
 })();
 ok('caricata la settimana dopo, resta quella in corso', /else if\(_turnoFuturo\(data\.giorni\)\)\{const cur=_turnoCorrenteDaArchivio\(\);/.test(String(loadWeekData)), true);
+
+// ── Agenda (28/11/2026, QM): il testo degli impegni è in maiuscoletto (solo aspetto) ──
+sez('Agenda: impegni in maiuscoletto (28/11/2026)');
+ok('il testo dell\'impegno sta nel contenitore del maiuscoletto', /<span class="ag-tt">chiamare Rossi<\/span>/.test(_agRiga({ id: 'x1', giorno: '2026-11-28', testo: 'chiamare Rossi' }, false)), true);
+ok('il testo salvato non si tocca', /chiamare Rossi/.test(_agRiga({ id: 'x1', giorno: '2026-11-28', testo: 'chiamare Rossi' }, false)), true);
