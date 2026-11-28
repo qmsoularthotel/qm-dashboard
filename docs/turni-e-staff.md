@@ -605,7 +605,7 @@ dove sta la linguetta. Negli altri mesi il calendario resta com'era. Controlli i
 ## Abdelrahim, Battaglia, Anushka e Roberta (28/11/2026, QM)
 
 - **Abdelrahim A. è della reception** (notturno). È la stessa persona che fino a ottobre il planning
-  scriveva «Abdalla» o «Extra ABD»: dal 02/11/2026 il foglio scrive «Abdelrahim A.», che non era
+  scriveva «Abdalla» o «Extra ABD» (Abdalla è il nome, Abdelrahim il cognome: confermato dal QM il 28/11/2026): dal 02/11/2026 il foglio scrive «Abdelrahim A.», che non era
   nell'organico e finiva fra gli extra **Housekeeping** (e usciva dalle statistiche del ricevimento).
   Ora il nome dell'organico è «Abdelrahim A.» (`DEPTS.fo`, `TURNI_NOTTURNI`, `TURNI_DAL`) e
   `_turnoNomeHK` riporta a lui «Abdalla», «Extra ABD», «ABDELRAHIM…». Le settimane già archiviate
