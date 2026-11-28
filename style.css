@@ -1407,7 +1407,11 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .pw-t{display:flex;justify-content:space-between;align-items:baseline;gap:4px;border-top:1px solid var(--border-light);padding-top:6px;margin-top:1px;}
 .pw-tl{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;}
 .pw-tv{font-size:16px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
-@media (max-width:1100px){.pw-l{display:none;}.pw-r{justify-content:center;gap:4px;}.pw-sl{margin-left:0;}}
+/* Scheda stretta: decide la larghezza della SCHEDA, non della finestra (28/11/2026: sullo schermo del
+   QM l'Overview è più stretta della finestra e «Lib» usciva dal bordo). Le scritte fermate/partenze
+   lasciano il posto, «Lib» resta accanto al cerchio. */
+.pw-day{container-type:inline-size;}
+@container (max-width:130px){.pw-l{display:none;}.pw-r{justify-content:center;gap:4px;}.pw-sl{margin-left:0;}}
 @media (max-width:768px){
   .pw-riga{gap:3px;}
   .pw-r{flex-direction:column;gap:2px;}

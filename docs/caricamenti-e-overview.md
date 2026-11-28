@@ -345,3 +345,7 @@ Boutique. Il giorno scelto si accende in tutte e due; la situazione del giorno s
 **San Liborio indicato** (28/11/2026, QM): nella striscia SoulArt + San Liborio, accanto a fermate e
 partenze, la scritta oro «Lib», senza pastiglia né numero (`_sl`, `.pw-sl`; il QM ha scartato «SL» in pastiglia e il numero), dice che ce ne sono di San Liborio; quante, nel suggerimento al passaggio del mouse; se zero resta lo
 spazio vuoto (`.pw-sl.vuoto`, invisibile) perché su smartphone i giorni restino allineati.
+**Scheda stretta** (28/11/2026): sullo schermo del QM l'Overview è più stretta della finestra e «Lib»
+usciva dal bordo della scheda. Ora decide la larghezza della scheda, non della finestra: `.pw-day` è
+un contenitore (`container-type:inline-size`) e sotto 130px di contenuto (`@container`) le scritte
+fermate/partenze lasciano il posto e «Lib» resta accanto al cerchio.
