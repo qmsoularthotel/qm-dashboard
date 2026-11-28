@@ -3595,7 +3595,7 @@ function pianoRenderWeek(activeIdx){
   const today=new Date();today.setHours(0,0,0,0);
   const _mob=window.innerWidth<=768;
   // Stile «Registration Cards» (QM, 28/11/2026): scheda chiara per giorno, numeri nei cerchi
-  // chiari (azzurro/oro le fermate, arancio le partenze), etichette piccole in maiuscolo, il giorno scelto col filo oro in
+  // chiari (azzurro col bordo blu le fermate, arancio le partenze), etichette piccole in maiuscolo, il giorno scelto col filo oro in
   // alto, «Oggi» in oro. Misure e disposizione su smartphone stanno in style.css (.pw-*).
   const _oggi=today.getDate()+'/'+(today.getMonth()+1);
   const _dm=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?parseInt(m[1],10)+'/'+parseInt(m[2],10):'';};

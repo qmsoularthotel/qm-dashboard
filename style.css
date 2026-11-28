@@ -1386,7 +1386,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .sis-red{color:var(--red)!important;font-weight:600;}
 
 /* Settimana del Piano in Overview, stile «Registration Cards» (QM, 28/11/2026): una scheda per
-   giorno, numeri nei cerchi chiari (azzurro col bordo oro le fermate, arancio le partenze; scelti dal QM
+   giorno, numeri nei cerchi chiari (azzurro col bordo blu le fermate, arancio le partenze; scelti dal QM
    il 28/11/2026 al posto dei cerchi blu pieni, troppo pesanti), il giorno scelto col filo oro. */
 .pw-sez+.pw-sez{margin-top:10px;}
 .pw-sez-t{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin:0 2px 6px;}
@@ -1400,7 +1400,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .pw-r{display:flex;align-items:center;gap:6px;min-height:30px;}
 /* Scritta e «Lib» uno sotto l'altra: così le scritte stanno anche nelle schede strette (QM, 28/11/2026). */
 .pw-lt{display:flex;flex-direction:column;min-width:0;line-height:1.15;}
-.pw-n{min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--accent-bg);border:1.5px solid var(--gold);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.pw-n{min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--accent-bg);border:1.5px solid var(--accent);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;}
 .pw-n.part{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);}
 .pw-n.zero{background:none;border-color:var(--border-light);color:var(--text-dim);}
 .pw-l{font-size:12px;color:var(--text-muted);white-space:nowrap;}

@@ -357,3 +357,5 @@ colonna), non accanto, così «partenze»/«fermate» entrano anche nelle schede
 di contenuto cerchio e scritta si rimpiccioliscono; solo sotto 66px (smartphone) le scritte spariscono
 e «Lib» resta vicino al cerchio. Senza San Liborio lo spazio vuoto di «Lib» si toglie quando ci sono le
 scritte (altrimenti la parola stava più in alto del cerchio) e resta solo senza scritte, per allineare.
+
+**Bordo delle fermate** (28/11/2026, QM): blu (`--accent`), non oro.
