@@ -349,3 +349,5 @@ spazio vuoto (`.pw-sl.vuoto`, invisibile) perché su smartphone i giorni restino
 usciva dal bordo della scheda. Ora decide la larghezza della scheda, non della finestra: `.pw-day` è
 un contenitore (`container-type:inline-size`) e sotto 130px di contenuto (`@container`) le scritte
 fermate/partenze lasciano il posto e «Lib» resta accanto al cerchio.
+
+**Ordine delle righe** (28/11/2026, QM): sopra le partenze (con i cambi), sotto le fermate.
