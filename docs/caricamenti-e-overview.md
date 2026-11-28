@@ -337,3 +337,7 @@ data, fermate e partenze+cambi nei cerchi chiari (azzurro con bordo oro / aranci
 fondo; il giorno scelto ha il filo oro in alto. Niente più icone PNG né misure scritte in JavaScript:
 la disposizione per smartphone sta nelle `@media` di `.pw-*` (sotto 1100px spariscono le scritte
 accanto ai cerchi, che restano nel suggerimento al passaggio del mouse). Esempio nella guida di stile.
+
+**Due strisce** (28/11/2026, QM): una per SoulArt + San Liborio e una per la Boutique (`_striscia`,
+`.pw-sez`/`.pw-sez-t`/`.pw-riga`). Prima i conti erano uno solo e San Liborio era sommato alla
+Boutique. Il giorno scelto si accende in tutte e due; la situazione del giorno sotto non cambia.

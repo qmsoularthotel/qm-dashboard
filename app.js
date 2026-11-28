@@ -3600,11 +3600,13 @@ function pianoRenderWeek(activeIdx){
   const _oggi=today.getDate()+'/'+(today.getMonth()+1);
   const _dm=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?parseInt(m[1],10)+'/'+parseInt(m[2],10):'';};
   const _cerchio=(n,cls,t)=>`<span class="pw-n${n?'':' zero'}${cls?' '+cls:''}" title="${n} ${t}">${n}</span>`;
-  row.innerHTML=pianoData.giorni.map((g,i)=>{
-    const lib=g.liborio||{partenze:[],fermate:[],cambi:[]};
-    const bMerged={partenze:[...(g.boutique?.partenze||[]),...lib.partenze],fermate:[...(g.boutique?.fermate||[]),...lib.fermate],cambi:[...(g.boutique?.cambi||[]),...lib.cambi]};
-    const totP=(g.soulart?.partenze?.length||0)+(g.soulart?.cambi?.length||0)+bMerged.partenze.length+bMerged.cambi.length;
-    const totF=(g.soulart?.fermate?.length||0)+bMerged.fermate.length;
+  // Due strisce separate (QM, 28/11/2026): SoulArt insieme a San Liborio, e la Boutique da sola.
+  // Prima i conti erano uno solo, con San Liborio sommato alla Boutique. Il giorno si sceglie
+  // da una qualunque delle due e si accende in entrambe.
+  const _n=a=>(a&&a.length)||0;
+  const _conta=(hs,g)=>hs.reduce((t,h)=>{const x=g[h]||{};t.f+=_n(x.fermate);t.p+=_n(x.partenze)+_n(x.cambi);return t;},{f:0,p:0});
+  const _striscia=(titolo,hs)=>`<div class="pw-sez"><div class="pw-sez-t">${titolo}</div><div class="pw-riga">${pianoData.giorni.map((g,i)=>{
+    const c=_conta(hs,g);
     const parts=g.label?g.label.split(' '):['?'];
     const dayName=_esc(parts[0].substring(0,3));
     const dayDate=_esc(parts[1]||'');
@@ -3612,14 +3614,11 @@ function pianoRenderWeek(activeIdx){
     return`<div onclick="pianoNavRender(${i})" class="pw-day${i===activeIdx?' on':''}" title="${_esc(g.label||'')}">
       <div class="pw-k">${oggi?'Oggi':''}</div>
       <div class="pw-g">${dayName}<span class="pw-d">${dayDate}</span></div>
-      <div class="pw-r">${_cerchio(totF,'','fermate')}<span class="pw-l">fermate</span></div>
-      <div class="pw-r">${_cerchio(totP,'part','partenze e cambi')}<span class="pw-l">partenze</span></div>
-      <div class="pw-t"><span class="pw-tl">Tot</span><span class="pw-tv">${totF+totP}</span></div>
-    </div>`;
-  }).join('');
-  // Il gap è in linea sull'elemento in index.html: per stringerlo su smartphone va
-  // scritto qui, altrimenti nessuna regola CSS lo raggiunge.
-  row.style.gap=_mob?'3px':'4px';
+      <div class="pw-r">${_cerchio(c.f,'','fermate')}<span class="pw-l">fermate</span></div>
+      <div class="pw-r">${_cerchio(c.p,'part','partenze e cambi')}<span class="pw-l">partenze</span></div>
+      <div class="pw-t"><span class="pw-tl">Tot</span><span class="pw-tv">${c.f+c.p}</span></div>
+    </div>`;}).join('')}</div></div>`;
+  row.innerHTML=_striscia('SoulArt Hotel · Art Suite San Liborio',['soulart','liborio'])+_striscia('Boutique Hotel',['boutique']);
 }
 
 // pianoRenderWeek decide la disposizione (cifre affiancate su desktop, impilate su
