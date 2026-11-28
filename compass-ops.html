@@ -258,12 +258,12 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-27.5';
+const QM_APP_BUILD='2026-11-28.1';
 // Il numero di versione si vede nella barra degli indirizzi nello stesso formato di Compass
 // (?v=633-20261125: numero che cresce a ogni pubblicazione, trattino, data), 25/11/2026, QM.
 // Lo fa crescere strumenti/versione.sh quando il file cambia. Senza ricaricare (replaceState):
 // l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione, con QM_APP_BUILD.
-const OPS_V='61-20261127';
+const OPS_V='62-20261128';
 try{const u=new URL(location.href);if(u.searchParams.get('v')!==OPS_V){u.searchParams.set('v',OPS_V);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
@@ -4606,7 +4606,7 @@ function gtuRender(){
   el.innerHTML=_gtBanner()+(arch?'<div id="gtuArchivioWrap"></div>':'<div id="gtuStatsWrap"></div>');
   if(arch)gtuRenderArchivio();else gtuRenderStats();
 }
-const GTU_DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.','Abdalla']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.','Extra BKF']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
+const GTU_DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.','Abdelrahim A.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Battaglia A.','Albano D.','Ferace C.','Panagodage S.','Extra BKF']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 
 const GTU_STAFF_CESSATI={'Iannario R.':'2026-10-01'};
 
@@ -4813,6 +4813,14 @@ function gtuStatistiche(archivio,membri){
 // L'archivio conta dal 2026 (il QM carica i planning a ritroso fino a gennaio, 21/11/2026); una
 // settimana oltre due mesi da oggi ha le date lette male e non si conta.
 const GTU_INIZIO='2026-01-01';
+// I nomi si leggono come nei turni caricati (28/11/2026): «Abdalla» delle settimane vecchie e
+// «Abdelrahim A.» di quelle nuove sono la stessa persona e nelle statistiche vanno sommati.
+// Se due nomi diventano uno, vince il turno non vuoto. Pura.
+function _gtuNomiCanonici(sh){
+  const o={};
+  Object.keys(sh||{}).forEach(k=>{const n=_gtuTNomeHK(k);if(o[n]===undefined||!String(o[n]).trim())o[n]=sh[k];});
+  return o;
+}
 function gtuRipuliArchivio(arch){
   const out={};
   const lim=new Date();lim.setDate(lim.getDate()+60);
@@ -4820,7 +4828,7 @@ function gtuRipuliArchivio(arch){
   Object.keys(arch||{}).forEach(k=>{
     const v=arch[k];
     if(!v||!Array.isArray(v.giorni)||!v.giorni.length)return;
-    const voce=gtuVoceStorico({giorni:v.giorni.map(g=>Object.assign({date:g.data,shifts:g.shifts},_gtuConEsclusi(g)))});
+    const voce=gtuVoceStorico({giorni:v.giorni.map(g=>Object.assign({date:g.data,shifts:_gtuNomiCanonici(g.shifts)},_gtuConEsclusi(g)))});
     if(!voce)return;
     if(voce.chiave<GTU_INIZIO||voce.chiave>limIso)return;
     voce.ts=v.ts||voce.ts;
@@ -4840,11 +4848,11 @@ function gtuStoricoLeggi(){
 // Grieco e' un notturno che fa una o due CC a settimana: per questo le colonne diurne dei
 // notturni si riempiono quando c'e' un numero e restano vuote solo quando e' zero.
 // Svuotarle sempre nasconderebbe proprio il dato che distingue il suo turno dagli altri.
-// Abdalla notturno dal 31/10/2026.
-// Da quando si conta una persona (21/11/2026, QM): Abdalla dal 1 ottobre; fino al 30/09 c'era
+// Abdelrahim notturno dal 31/10/2026 (fino a ottobre nel planning era «Abdalla» / «Extra ABD»).
+// Da quando si conta una persona (21/11/2026, QM): Abdelrahim dal 1 ottobre; fino al 30/09 c'era
 // Iannario, che resta con la sua data di uscita in GTU_STAFF_CESSATI.
-const GTU_DAL={'Abdalla':'2026-10-01'};
-const GTU_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.','Abdalla'];
+const GTU_DAL={'Abdelrahim A.':'2026-10-01'};
+const GTU_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.','Abdelrahim A.'];
 // Ordine di reception: i due riferimenti in cima, poi gli altri in ordine alfabetico,
 // i notturni in fondo (fra loro alfabetici).
 const GTU_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
@@ -4873,7 +4881,7 @@ const GTU_DOPO={'Vatiero R.':'Perez L.'};
 // Tre gruppi (housekeeping con la Ditta, colazione, manutenzione), separati in tabella da una
 // linea più spessa. La Ditta va dopo Roberta (QM, 19/11/2026).
 const GTU_GRUPPI_ALTRI=[['Matarese A.','Cavaliere L.','Sarnataro A.','Anushka','Roberta','Ditta'],
-  ['Amorese S.','Extra BKF','Ferace C.','Panagodage S.'],['Basile G.']];
+  ['Amorese S.','Battaglia A.','Extra BKF','Ferace C.','Panagodage S.'],['Basile G.']];
 const GTU_ORDINE_ALTRI=GTU_GRUPPI_ALTRI.flat();
 function _gtuGruppoAltri(n){const i=GTU_GRUPPI_ALTRI.findIndex(g=>g.indexOf(n)>=0);return i<0?GTU_GRUPPI_ALTRI.length:i;}
 function gtuOrdinaAltri(nomi){
@@ -5091,14 +5099,16 @@ function _gtuTNomeHK(nome){
   // interne, non la ditta (QM, 19/11/2026).
   if(/^(extra|ditta)\s+a\.?$/i.test(n))return'Anushka';
   if(/^(extra|ditta)\s+r\.?$/i.test(n))return'Roberta';
+  // Abdelrahim (reception, notturno): fino a ottobre il planning lo scriveva «Abdalla» o
+  // «Extra ABD», dal 02/11/2026 «Abdelrahim A.». È una persona sola (QM, 28/11/2026).
+  if(/^(extra\s+)?(abdalla|abdelrahim)\b/i.test(n)||/^extra\s+abd/i.test(n))return'Abdelrahim A.';
   if(!/^extra\b/i.test(n))return n;
   // Un nome della reception, colazione o manutenzione si riporta alla grafia dell'elenco.
   const nonHK=[...GTU_DEPTS.fo.members,...GTU_DEPTS.bkf.members,...GTU_DEPTS.mt.members];
   const canonico=nonHK.find(x=>x.toLowerCase()===n.toLowerCase());
   if(canonico)return canonico;
-  // Non tutti gli "Extra" sono Housekeeping (06/10/2026): "Extra ABD" è Abdalla, della
+  // Non tutti gli "Extra" sono Housekeeping (06/10/2026): "Extra ABD" è Abdelrahim (sopra), della
   // reception; "Extra BKF" resta "Extra BKF", della colazione (anche scritto "EXTRA BKF").
-  if(/^extra\s+abd/i.test(n))return'Abdalla';
   if(/^extra\s+bkf\b/i.test(n))return'Extra BKF';
   if(/^extra\s+rob/i.test(n))return'Roberta';
   if(/^extra\s+anu/i.test(n))return'Anushka';

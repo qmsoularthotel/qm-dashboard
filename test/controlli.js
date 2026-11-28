@@ -936,12 +936,12 @@ ok('INTGALL 10/18 pure',               turniNormalizza('INTGALL 10/18').sede, 'g
   ok('statistiche: intermedi/mattine/riposi/ferie', [_p.intermedi, _p.mattina, _p.riposi, _p.ferie].join(','), '1,1,1,1');
   ok('GALL/CAR va all\'Art Resort', _p.soulart + '/' + _p.galleria, '1/1');
   ok('nessun codice ignoto', _st.ignoti.length, 0); }
-ok('Abdalla e\' un notturno', TURNI_NOTTURNI.indexOf('Abdalla') >= 0, true);
+ok('Abdelrahim e\' un notturno', TURNI_NOTTURNI.indexOf('Abdelrahim A.') >= 0, true);
 ok('Iannario resta nel ricevimento (archivio)', DEPTS.fo.members.indexOf('Iannario R.') >= 0, true);
 ok('Iannario e\' segnato come uscito', !!STAFF_CESSATI['Iannario R.'], true);
 ok('chi e\' uscito chiude la tabella, dopo i notturni',
-   turniOrdina(['Iannario R.', 'Grieco V.', 'Abdalla', 'Perez L.', 'Presta P.']).join('|'),
-   'Presta P.|Perez L.|Abdalla|Grieco V.|Iannario R.');
+   turniOrdina(['Iannario R.', 'Grieco V.', 'Abdelrahim A.', 'Perez L.', 'Presta P.']).join('|'),
+   'Presta P.|Perez L.|Abdelrahim A.|Grieco V.|Iannario R.');
 if (typeof IS_REST === 'function') {
   ok('AC RICHIESTO non e\' un riposo nel turno', IS_REST('AC RICHIESTO'), false);
   ok('REC RIP e\' un riposo nel turno', IS_REST('REC RIP'), true);
@@ -3407,8 +3407,8 @@ sez('Turno: le camere 200 sono solo della ditta');
 
 // ── Turno: Extra ABD = Abdalla (reception), Extra BKF resta Extra BKF (colazione) — 06/10/2026 ──
 sez('Turno: Abdalla e Extra BKF');
-ok('Extra ABD diventa Abdalla', _turnoNomeHK('EXTRA ABD') + ' / ' + _turnoNomeHK('Extra Abdalla'), 'Abdalla / Abdalla');
-ok('Abdalla e\' della reception', DEPTS.fo.members.indexOf('Abdalla') >= 0, true);
+ok('Extra ABD e Abdalla diventano Abdelrahim', [_turnoNomeHK('EXTRA ABD'), _turnoNomeHK('Extra Abdalla'), _turnoNomeHK('Abdalla'), _turnoNomeHK('ABDELRAHIM A.')].join(' / '), 'Abdelrahim A. / Abdelrahim A. / Abdelrahim A. / Abdelrahim A.');
+ok('Abdelrahim e\' della reception', DEPTS.fo.members.indexOf('Abdelrahim A.') >= 0 && DEPTS.hk.members.indexOf('Abdelrahim A.') < 0, true);
 ok('Extra BKF resta Extra BKF, non Ditta', _turnoNomeHK('EXTRA BKF') + ' / ' + _turnoNomeHK('Extra BKF'), 'Extra BKF / Extra BKF');
 ok('Extra BKF e\' della colazione', DEPTS.bkf.members.indexOf('Extra BKF') >= 0, true);
 ok('le altre extra restano della ditta', _turnoNomeHK('Extra Maria'), 'Ditta Maria');
@@ -4551,10 +4551,10 @@ ok('RIP.REC. DEL 11/07 è riposo',                   (turniNormalizza('RIP.REC. 
 ok('INT CAR resta un intermedio',                   (turniNormalizza('INT CAR 9/17') || {}).fascia, 'intermedio');
 (function () {
   var arch = { '2026-09-28': { dal: '2026-09-28', al: '2026-10-04', giorni: [
-    { data: '2026-09-29', shifts: { 'Abdalla': 'NC', 'Iannario R.': 'NG' } },
-    { data: '2026-10-02', shifts: { 'Abdalla': 'NC' } } ] } };
-  var st = turniStatistiche(arch, ['Abdalla', 'Iannario R.']);
-  ok('Abdalla: il 29/09 non conta, il 02/10 sì',      st.per['Abdalla'].notti, 1);
+    { data: '2026-09-29', shifts: { 'Abdelrahim A.': 'NC', 'Iannario R.': 'NG' } },
+    { data: '2026-10-02', shifts: { 'Abdelrahim A.': 'NC' } } ] } };
+  var st = turniStatistiche(arch, ['Abdelrahim A.', 'Iannario R.']);
+  ok('Abdelrahim: il 29/09 non conta, il 02/10 sì',   st.per['Abdelrahim A.'].notti, 1);
   ok('Iannario fino al 30/09 conta',                  st.per['Iannario R.'].notti, 1);
 })();
 (function () {
@@ -4827,4 +4827,39 @@ sez('Operativa HKP: sigle doppie a grandezza piena, colonna allargata');
   ok('una sigla doppia lunga allarga la colonna',      _hkpNLargCol(['TI', 'AM/ANT']) > 42, true);
   ok('la piu\' larga decide',                          _hkpNLargCol(['PA/TI', 'LC/ANU']) >= _hkpNLargCol(['PA/TI']), true);
   ok('la griglia usa la larghezza calcolata',          /(const|var) DW=_hkpNLargCol\(/.test(String(hkpNRenderGrid)), true);
+})();
+
+// ── Turno (28/11/2026, QM): Abdelrahim è della reception, Battaglia della colazione, e Anushka e
+// Roberta (extra) con la casella bianca non vanno fra chi non è in servizio. ──
+sez('Turno: Abdelrahim reception, Battaglia colazione, Anushka e Roberta fuori turno (28/11/2026)');
+ok('Battaglia e\' della colazione', DEPTS.bkf.members.indexOf('Battaglia A.') >= 0 && DEPTS.hk.members.indexOf('Battaglia A.') < 0, true);
+ok('Battaglia nel gruppo colazione dell\'archivio', _turniGruppoAltri('Battaglia A.'), 1);
+(function () {
+  // Settimane vecchie con «Abdalla», nuove con «Abdelrahim A.»: nelle statistiche si sommano.
+  var arch = {
+    '2026-10-26': { dal: '2026-10-26', al: '2026-11-01', ts: 1, giorni: [{ data: '2026-10-28', shifts: { 'Abdalla': 'NC' } }] },
+    '2026-11-02': { dal: '2026-11-02', al: '2026-11-08', ts: 2, giorni: [{ data: '2026-11-03', shifts: { 'Abdelrahim A.': 'NG', 'EXTRA A': '' } }] } };
+  var st = turniStatistiche(turniRipuliArchivio(arch), DEPTS.fo.members);
+  ok('Abdalla e Abdelrahim sommati nelle statistiche', st.per['Abdelrahim A.'].notti, 2);
+  ok('nell\'archivio letto non resta «Abdalla»', JSON.stringify(turniRipuliArchivio(arch)).indexOf('Abdalla'), -1);
+  ok('nomi canonici: vince il turno non vuoto', JSON.stringify(_turniNomiCanonici({ 'Abdalla': '', 'Abdelrahim A.': 'NC' })), '{"Abdelrahim A.":"NC"}');
+})();
+ok('Anushka e Roberta sono le extra', _turnoExtraHK('Anushka') && _turnoExtraHK('roberta') && !_turnoExtraHK('Matarese A.'), true);
+if (typeof renderDay === 'function') (function () {
+  var box = { innerHTML: '' }, vq = document.querySelectorAll, vg = document.getElementById, wd = weekData;
+  document.querySelectorAll = function (q) { return q === '.staff-area-mirror' ? [box] : vq.call(document, q); };
+  try {
+    var d = _turniSenzaEsclusi({ giorni: [{ label: 'Lun 30/11', date: '2026-11-30', shifts: {
+      'Maddaloni M.': 'P', 'Presta P.': 'R', 'Abdelrahim A.': 'NC', 'Battaglia A.': 'BKF SOUL',
+      'Matarese A.': 'SOUL', 'EXTRA A': '', 'EXTRA R': 'R', 'EXTRA': '200' } }] });
+    weekData = d; renderDay(0);
+    var h = box.innerHTML, ns = h.split('staff-grid')[0], carte = h.split('staff-dept-card');
+    var carta = function (et) { return carte.filter(function (c) { return c.indexOf('>' + et + '<') >= 0; })[0] || ''; };
+    ok('Abdelrahim nel Ricevimento',               /Abdelrahim/.test(carta('Ricevimento')) && !/Abdelrahim/.test(carta('Housekeeping')), true);
+    ok('Battaglia nel Breakfast',                  /Battaglia/.test(carta('Breakfast')) && !/Battaglia/.test(carta('Housekeeping')), true);
+    ok('Anushka e Roberta non sono «non in servizio»', /Anushka|Roberta/.test(ns), false);
+    ok('Presta a riposo resta «non in servizio»',  /Presta/.test(ns), true);
+    d.giorni[0].shifts.Roberta = 'SOUL N.'; renderDay(0);
+    ok('Roberta in turno compare in Housekeeping', /Roberta/.test(box.innerHTML.split('staff-dept-card').filter(function (c) { return c.indexOf('>Housekeeping<') >= 0; })[0] || ''), true);
+  } finally { document.querySelectorAll = vq; weekData = wd; }
 })();

@@ -138,7 +138,7 @@ ferie e malattie: mattine e pomeriggi non descrivono il loro lavoro.
 #### Notturni e personale uscito
 
 `TURNI_NOTTURNI` è un elenco esplicito: D'Andrea, Grieco, Iannario e, dal 31/10/2026,
-**Abdalla**. Chi non lavora più con noi sta in `STAFF_CESSATI` con il primo giorno di assenza
+**Abdelrahim A.** (prima «Abdalla», vedi sotto). Chi non lavora più con noi sta in `STAFF_CESSATI` con il primo giorno di assenza
 (Iannario dal 01/10/2026): **resta in `DEPTS`** perché archivio e statistiche lo devono
 riconoscere, ma esce dall'elenco dei nomi dato all'AI per i turni nuovi, e nelle statistiche
 chiude la tabella, sbiadito, con "fino al 30/09".
@@ -373,7 +373,7 @@ Angelica, Extra Benedetta) restano come sono. In `DEPTS.hk` i nomi sono aggiorna
 lettura (l'AI scivola di una riga quando due righe vicine hanno il trattino: Roberta il 2/10). Torna alla
 ditta e la persona va a "-". Anche il prompt ora chiede di non spostare i valori fra le righe.
 
-**Non tutti gli Extra sono Housekeeping** (06/10/2026): "Extra ABD" → **Abdalla** (Ricevimento, in `DEPTS.fo`);
+**Non tutti gli Extra sono Housekeeping** (06/10/2026): "Extra ABD" → **Abdelrahim A.** (Ricevimento, in `DEPTS.fo`; fino al 28/11/2026 si chiamava «Abdalla»);
 "Extra BKF" resta **Extra BKF** (Breakfast, in `DEPTS.bkf`), mai "Ditta BKF".
 
 ## Preferenze Turnazione nella Galleria, dietro PIN (16/11/2026)
@@ -600,3 +600,22 @@ del mese, la linguetta oro copriva le lettere dei giorni (L M M…). Ora in quel
 prende la classe `tp-sett-prima` e le intestazioni (`.tp-cal-int`) hanno 20 px di spazio sotto,
 dove sta la linguetta. Negli altri mesi il calendario resta com'era. Controlli in
 `test/controlli.js`, `test/galleria.js` e `test/esegui.sh` (regola CSS).
+
+
+## Abdelrahim, Battaglia, Anushka e Roberta (28/11/2026, QM)
+
+- **Abdelrahim A. è della reception** (notturno). È la stessa persona che fino a ottobre il planning
+  scriveva «Abdalla» o «Extra ABD»: dal 02/11/2026 il foglio scrive «Abdelrahim A.», che non era
+  nell'organico e finiva fra gli extra **Housekeeping** (e usciva dalle statistiche del ricevimento).
+  Ora il nome dell'organico è «Abdelrahim A.» (`DEPTS.fo`, `TURNI_NOTTURNI`, `TURNI_DAL`) e
+  `_turnoNomeHK` riporta a lui «Abdalla», «Extra ABD», «ABDELRAHIM…». Le settimane già archiviate
+  si leggono coi nomi giusti (`turniRipuliArchivio` → `_turniNomiCanonici`, pura; nella Galleria
+  `_gtuNomiCanonici`): vecchie e nuove si sommano. Presenze Cascione non cambia: aggancia già
+  «Abdelrahim A.».
+- **Battaglia A. è della colazione** (`DEPTS.bkf`, gruppo colazione in `TURNI_GRUPPI_ALTRI`), non
+  più fra gli extra Housekeeping.
+- **Anushka e Roberta sono lavoratrici extra** (`TURNI_EXTRA_HK`, `_turnoExtraHK`): quando non sono
+  in turno la loro casella nel planning è **bianca**, quindi non vanno nella striscia «Non in
+  servizio» né nel conteggio della sidebar. Compaiono solo quando hanno un turno (in Housekeeping).
+- Controlli: «Turno: Abdelrahim reception, Battaglia colazione…» in `test/controlli.js`, provati
+  rompendo il codice; la copia della Galleria è confrontata in `test/galleria.js`.

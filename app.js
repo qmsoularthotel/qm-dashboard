@@ -32,13 +32,17 @@ const BK_ICON=`<svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www
   }
 })();
 // §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
-const DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.','Abdalla']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.','Extra BKF']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
+const DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.','Abdelrahim A.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Battaglia A.','Albano D.','Ferace C.','Panagodage S.','Extra BKF']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 // Chi non lavora piu' con noi, con il primo giorno di assenza. RESTA in DEPTS di proposito:
 // le settimane archiviate e le statistiche lo devono ancora riconoscere (31/10/2026: Iannario,
 // "tienilo in archivio"). Esce solo dall'elenco dei nomi dato all'AI per leggere i turni
 // nuovi e, nelle statistiche, va in fondo con la data di uscita.
 const STAFF_CESSATI={'Iannario R.':'2026-10-01'};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
+// Lavoratrici extra dell'Housekeeping (QM, 28/11/2026): quando non sono in turno la loro casella
+// nel planning è bianca. Non sono «a riposo»: non vanno nella striscia «Non in servizio».
+const TURNI_EXTRA_HK=['Anushka','Roberta'];
+const _turnoExtraHK=n=>TURNI_EXTRA_HK.some(x=>x.toLowerCase()===String(n||'').trim().toLowerCase());
 let weekData=null,activeDay=0;
 const IS_REST=v=>{
   if(!v)return true;
@@ -611,6 +615,14 @@ function turniStatistiche(archivio,membri){
 // L'archivio conta dal 2026 (il QM carica i planning a ritroso fino a gennaio, 21/11/2026); una
 // settimana oltre due mesi da oggi ha le date lette male e non si conta.
 const TURNI_INIZIO='2026-01-01';
+// I nomi si leggono come nei turni caricati (28/11/2026): «Abdalla» delle settimane vecchie e
+// «Abdelrahim A.» di quelle nuove sono la stessa persona e nelle statistiche vanno sommati.
+// Se due nomi diventano uno, vince il turno non vuoto. Pura.
+function _turniNomiCanonici(sh){
+  const o={};
+  Object.keys(sh||{}).forEach(k=>{const n=_turnoNomeHK(k);if(o[n]===undefined||!String(o[n]).trim())o[n]=sh[k];});
+  return o;
+}
 function turniRipuliArchivio(arch){
   const out={};
   const lim=new Date();lim.setDate(lim.getDate()+60);
@@ -618,7 +630,7 @@ function turniRipuliArchivio(arch){
   Object.keys(arch||{}).forEach(k=>{
     const v=arch[k];
     if(!v||!Array.isArray(v.giorni)||!v.giorni.length)return;
-    const voce=turniVoceStorico({giorni:v.giorni.map(g=>Object.assign({date:g.data,shifts:g.shifts},_turniConEsclusi(g)))});
+    const voce=turniVoceStorico({giorni:v.giorni.map(g=>Object.assign({date:g.data,shifts:_turniNomiCanonici(g.shifts)},_turniConEsclusi(g)))});
     if(!voce)return;
     if(voce.chiave<TURNI_INIZIO||voce.chiave>limIso)return;
     voce.ts=v.ts||voce.ts;
@@ -638,11 +650,11 @@ function turniStoricoLeggi(){
 // Grieco e' un notturno che fa una o due CC a settimana: per questo le colonne diurne dei
 // notturni si riempiono quando c'e' un numero e restano vuote solo quando e' zero.
 // Svuotarle sempre nasconderebbe proprio il dato che distingue il suo turno dagli altri.
-// Abdalla notturno dal 31/10/2026.
-// Da quando si conta una persona (21/11/2026, QM): Abdalla dal 1 ottobre; fino al 30/09 c'era
+// Abdelrahim notturno dal 31/10/2026 (fino a ottobre nel planning era «Abdalla» / «Extra ABD»).
+// Da quando si conta una persona (21/11/2026, QM): Abdelrahim dal 1 ottobre; fino al 30/09 c'era
 // Iannario, che resta con la sua data di uscita in STAFF_CESSATI.
-const TURNI_DAL={'Abdalla':'2026-10-01'};
-const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.','Abdalla'];
+const TURNI_DAL={'Abdelrahim A.':'2026-10-01'};
+const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.','Abdelrahim A.'];
 // Ordine di reception: i due riferimenti in cima, poi gli altri in ordine alfabetico,
 // i notturni in fondo (fra loro alfabetici).
 const TURNI_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
@@ -671,7 +683,7 @@ const TURNI_DOPO={'Vatiero R.':'Perez L.'};
 // Tre gruppi (housekeeping con la Ditta, colazione, manutenzione), separati in tabella da una
 // linea più spessa. La Ditta va dopo Roberta (QM, 19/11/2026).
 const TURNI_GRUPPI_ALTRI=[['Matarese A.','Cavaliere L.','Sarnataro A.','Anushka','Roberta','Ditta'],
-  ['Amorese S.','Extra BKF','Ferace C.','Panagodage S.'],['Basile G.']];
+  ['Amorese S.','Battaglia A.','Extra BKF','Ferace C.','Panagodage S.'],['Basile G.']];
 const TURNI_ORDINE_ALTRI=TURNI_GRUPPI_ALTRI.flat();
 function _turniGruppoAltri(n){const i=TURNI_GRUPPI_ALTRI.findIndex(g=>g.indexOf(n)>=0);return i<0?TURNI_GRUPPI_ALTRI.length:i;}
 function turniOrdinaAltri(nomi){
@@ -892,14 +904,16 @@ function _turnoNomeHK(nome){
   // interne, non la ditta (QM, 19/11/2026).
   if(/^(extra|ditta)\s+a\.?$/i.test(n))return'Anushka';
   if(/^(extra|ditta)\s+r\.?$/i.test(n))return'Roberta';
+  // Abdelrahim (reception, notturno): fino a ottobre il planning lo scriveva «Abdalla» o
+  // «Extra ABD», dal 02/11/2026 «Abdelrahim A.». È una persona sola (QM, 28/11/2026).
+  if(/^(extra\s+)?(abdalla|abdelrahim)\b/i.test(n)||/^extra\s+abd/i.test(n))return'Abdelrahim A.';
   if(!/^extra\b/i.test(n))return n;
   // Un nome della reception, colazione o manutenzione si riporta alla grafia dell'elenco.
   const nonHK=[...DEPTS.fo.members,...DEPTS.bkf.members,...DEPTS.mt.members];
   const canonico=nonHK.find(x=>x.toLowerCase()===n.toLowerCase());
   if(canonico)return canonico;
-  // Non tutti gli "Extra" sono Housekeeping (06/10/2026): "Extra ABD" è Abdalla, della
+  // Non tutti gli "Extra" sono Housekeeping (06/10/2026): "Extra ABD" è Abdelrahim (sopra), della
   // reception; "Extra BKF" resta "Extra BKF", della colazione (anche scritto "EXTRA BKF").
-  if(/^extra\s+abd/i.test(n))return'Abdalla';
   if(/^extra\s+bkf\b/i.test(n))return'Extra BKF';
   if(/^extra\s+rob/i.test(n))return'Roberta';
   if(/^extra\s+anu/i.test(n))return'Anushka';
@@ -986,7 +1000,7 @@ const IS_ABSENT=v=>{
   if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE'].includes(u))return true;
   return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||/^R\b.*RICHIEST/.test(u)||/^REC\.?\s*RIP/.test(u);
 };
-function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
+function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>!_turnoExtraHK(n)&&IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
 // Cerca lo shift di un membro DEPTS in modo case-insensitive
 function getShift(shifts,name){
   if(shifts[name]!==undefined)return shifts[name];
@@ -1080,10 +1094,11 @@ function renderDay(idx){
   // ALL_STAFF: se è a riposo va comunque mostrata da qualche parte, altrimenti sparisce
   // del tutto dalla giornata invece di finire nella striscia "Non in servizio".
   const extraNames=Object.keys(shifts).filter(n=>!allStaffLow.has(n.toLowerCase()));
+  // Anushka e Roberta (extra) fuori turno hanno la casella bianca: non sono «non in servizio».
   const nonServizio=[
     ...ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n))&&!IS_DASH(getShift(shifts,n))),
     ...extraNames.filter(n=>IS_REST(getShift(shifts,n))&&!IS_DASH(getShift(shifts,n)))
-  ];
+  ].filter(n=>!_turnoExtraHK(n));
   // Motivo dell'assenza per differenziare la striscia "Non in servizio" — riposo è normale
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
   function _absenceReason(v){
