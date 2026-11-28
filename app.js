@@ -3594,57 +3594,27 @@ function pianoRenderWeek(activeIdx){
   wrap.style.display='block';
   const today=new Date();today.setHours(0,0,0,0);
   const _mob=window.innerWidth<=768;
-  // Su smartphone i sette giorni devono stare tutti in schermo insieme, senza scorrere.
-  // Per ottenerlo senza rimpicciolire le cifre non si stringe la scheda: si impilano le
-  // due metriche invece di affiancarle. Affiancate sono loro a imporre la larghezza
-  // minima (due icone + due numeri + separatore); impilate, ogni riga usa tutta la
-  // larghezza della scheda e il numero resta leggibile anche a 40px.
-  const _ico=_mob?'12px':'36px';
-  const _numFs=_mob?'16px':'18px';
-  const _dayFs=_mob?'12px':'15px';
-  const _dateFs=_mob?'10px':'11px';
-  const _pad=_mob?'7px 2px 6px':'12px 8px 10px';
-  const _minW=_mob?'36px':'70px';
+  // Stile «Registration Cards» (QM, 28/11/2026): scheda chiara per giorno, numeri nei cerchi
+  // blu notte col bordo oro, etichette piccole in maiuscolo, il giorno scelto col filo oro in
+  // alto, «Oggi» in oro. Misure e disposizione su smartphone stanno in style.css (.pw-*).
+  const _oggi=today.getDate()+'/'+(today.getMonth()+1);
+  const _dm=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?parseInt(m[1],10)+'/'+parseInt(m[2],10):'';};
+  const _cerchio=(n,cls,t)=>`<span class="pw-n${n?'':' zero'}${cls?' '+cls:''}" title="${n} ${t}">${n}</span>`;
   row.innerHTML=pianoData.giorni.map((g,i)=>{
     const lib=g.liborio||{partenze:[],fermate:[],cambi:[]};
     const bMerged={partenze:[...(g.boutique?.partenze||[]),...lib.partenze],fermate:[...(g.boutique?.fermate||[]),...lib.fermate],cambi:[...(g.boutique?.cambi||[]),...lib.cambi]};
     const totP=(g.soulart?.partenze?.length||0)+(g.soulart?.cambi?.length||0)+bMerged.partenze.length+bMerged.cambi.length;
     const totF=(g.soulart?.fermate?.length||0)+bMerged.fermate.length;
-    const isActive=i===activeIdx;
     const parts=g.label?g.label.split(' '):['?'];
-    const dayName=parts[0].substring(0,3);
-    const dayDate=parts[1]||'';
-    const pColor=totP>0?'var(--amber)':'var(--text-dim)';
-    const fColor=totF>0?'var(--accent)':'var(--text-dim)';
-    const bg=isActive?'var(--surface2)':'var(--surface)';
-    const borderTop=isActive?'border-top:3px solid var(--accent);':'border-top:3px solid transparent;';
-    const totTot=totF+totP;
-    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:${_minW};background:${bg};border:1px solid var(--border);${borderTop}border-radius:10px;padding:${_pad};text-align:center;cursor:pointer;transition:all .15s;">
-      <div style="font-size:${_dayFs};font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
-      <div style="font-size:${_dateFs};color:var(--text-dim);margin-bottom:6px;margin-top:2px;">${dayDate}</div>
-      ${_mob?`<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:5px;">
-        <div style="display:flex;align-items:center;justify-content:center;gap:2px;">
-          <img src="img/icons/fermata.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
-          <span style="font-size:${_numFs};font-weight:700;color:${fColor};line-height:1;">${totF}</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:2px;">
-          <img src="img/icons/arrivi.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
-          <span style="font-size:${_numFs};font-weight:700;color:${pColor};line-height:1;">${totP}</span>
-        </div>
-      </div>`:`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:5px;">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/fermata.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
-          <span style="font-size:${_numFs};font-weight:700;color:${fColor};line-height:1;">${totF}</span>
-        </div>
-        <div style="width:1px;height:40px;background:var(--border-light);"></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/arrivi.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
-          <span style="font-size:${_numFs};font-weight:700;color:${pColor};line-height:1;">${totP}</span>
-        </div>
-      </div>`}
-      <div style="border-top:1px solid var(--border-light);padding-top:4px;">
-        <span style="font-size:10px;color:var(--text-dim);">tot </span><span style="font-size:${_mob?'12px':'14px'};font-weight:700;color:var(--text);">${totTot}</span>
-      </div>
+    const dayName=_esc(parts[0].substring(0,3));
+    const dayDate=_esc(parts[1]||'');
+    const oggi=_dm(parts[1])===_oggi;
+    return`<div onclick="pianoNavRender(${i})" class="pw-day${i===activeIdx?' on':''}" title="${_esc(g.label||'')}">
+      <div class="pw-k">${oggi?'Oggi':''}</div>
+      <div class="pw-g">${dayName}<span class="pw-d">${dayDate}</span></div>
+      <div class="pw-r">${_cerchio(totF,'','fermate')}<span class="pw-l">fermate</span></div>
+      <div class="pw-r">${_cerchio(totP,'part','partenze e cambi')}<span class="pw-l">partenze</span></div>
+      <div class="pw-t"><span class="pw-tl">Tot</span><span class="pw-tv">${totF+totP}</span></div>
     </div>`;
   }).join('');
   // Il gap è in linea sull'elemento in index.html: per stringerlo su smartphone va
