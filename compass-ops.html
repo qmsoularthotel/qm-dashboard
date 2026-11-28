@@ -258,12 +258,12 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-28.11';
+const QM_APP_BUILD='2026-11-28.12';
 // Il numero di versione si vede nella barra degli indirizzi nello stesso formato di Compass
 // (?v=633-20261125: numero che cresce a ogni pubblicazione, trattino, data), 25/11/2026, QM.
 // Lo fa crescere strumenti/versione.sh quando il file cambia. Senza ricaricare (replaceState):
 // l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione, con QM_APP_BUILD.
-const OPS_V='72-20261128';
+const OPS_V='73-20261128';
 try{const u=new URL(location.href);if(u.searchParams.get('v')!==OPS_V){u.searchParams.set('v',OPS_V);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
@@ -4228,7 +4228,9 @@ function _gtTrimestre(oggi){
 // Riceve le richieste di UNA persona. Pura.
 function _gtBlocchi(lista){
   const giorno=r=>{const m=String(_gtFmtDate(r.giornoRichiesto)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?Math.round(Date.UTC(+m[3],+m[2]-1,+m[1])/864e5):null;};
-  const tipo=r=>String(r.preferenza||'').trim().replace(/\s+/g,' ').toUpperCase();
+  // Riposi e ferie attaccati sono un'unica assenza (QM, 28/11/2026: 8/10 riposo, 9/10 ferie, 10/10
+  // riposo = una richiesta). Le richieste di turno (apertura, chiusura…) restano per tipo.
+  const tipo=r=>{const u=String(r.preferenza||'').trim().replace(/\s+/g,' ').toUpperCase();return /FERIE|RIPOSO/.test(u)?'LIBERO':u;};
   const ord=(lista||[]).map(r=>({r,g:giorno(r),t:tipo(r)})).filter(x=>x.g!==null).sort((a,b)=>a.t.localeCompare(b.t)||a.g-b.g);
   const out=[];
   ord.forEach(x=>{
@@ -4236,7 +4238,9 @@ function _gtBlocchi(lista){
     if(u&&u.t===x.t&&x.g-u.ga<=1){if(x.g>u.ga){u.ga=x.g;u.a=x.r;}u.righe.push(x.r);return;}
     out.push({t:x.t,gd:x.g,ga:x.g,da:x.r,a:x.r,righe:[x.r]});
   });
-  return out.map(b=>({da:b.da,a:b.a,giorni:b.ga-b.gd+1,preferenza:b.da.preferenza,
+  // Nel blocco misto si leggono tutte le preferenze, nell'ordine dei giorni: «RIPOSO + FERIE».
+  const nomi=b=>[...new Set(b.righe.slice().sort((x,y)=>giorno(x)-giorno(y)).map(r=>String(r.preferenza||'').trim().toUpperCase()).filter(Boolean))].join(' + ');
+  return out.map(b=>({da:b.da,a:b.a,giorni:b.ga-b.gd+1,preferenza:nomi(b)||b.da.preferenza,
     motivazione:(b.righe.find(r=>r.motivazione)||{}).motivazione||'',righe:b.righe}));
 }
 function _gtConsuntivo(dati,filtro,oggi){

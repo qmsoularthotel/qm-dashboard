@@ -4911,7 +4911,10 @@ sez('Preferenze: richieste di fila contano una volta (28/11/2026)');
   ok('riposo 8 e 9 ottobre: una richiesta',          _tpBlocchi([R('09/10/2026', 'RIPOSO'), R('08/10/2026', 'riposo')]).length, 1);
   ok('e dice dal/al e quanti giorni',                (function (b) { return b.da.giornoRichiesto + '>' + b.a.giornoRichiesto + ' ' + b.giorni; })(_tpBlocchi([R('09/10/2026', 'RIPOSO'), R('08/10/2026', 'RIPOSO')])[0]), '08/10/2026>09/10/2026 2');
   ok('giorni non di fila: due richieste',            _tpBlocchi([R('08/10/2026', 'RIPOSO'), R('10/10/2026', 'RIPOSO')]).length, 2);
-  ok('riposo e ferie di fila: due richieste',        _tpBlocchi([R('08/10/2026', 'RIPOSO'), R('09/10/2026', 'FERIE')]).length, 2);
+  ok('riposo e ferie di fila: una richiesta',        _tpBlocchi([R('08/10/2026', 'RIPOSO'), R('09/10/2026', 'FERIE')]).length, 1);
+  ok('8/10 riposo, 9/10 ferie, 10/10 riposo: una',   _tpBlocchi([R('10/10/2026', 'RIPOSO'), R('08/10/2026', 'RIPOSO'), R('09/10/2026', 'FERIE')]).length, 1);
+  ok('e si legge RIPOSO + FERIE',                    _tpBlocchi([R('10/10/2026', 'RIPOSO'), R('08/10/2026', 'RIPOSO'), R('09/10/2026', 'FERIE')])[0].preferenza, 'RIPOSO + FERIE');
+  ok('chiusura e riposo di fila: due (turno e libero)', _tpBlocchi([R('08/10/2026', 'CHIUSURA'), R('09/10/2026', 'RIPOSO')]).length, 2);
   ok('stesso giorno scritto due volte: una',         _tpBlocchi([R('08/10/2026', 'RIPOSO'), R('08/10/2026', 'RIPOSO')]).length, 1);
   ok('a cavallo del mese: una',                      _tpBlocchi([R('31/10/2026', 'FERIE'), R('01/11/2026', 'FERIE')]).length, 1);
   // Settimana prossima del 16/11/2026 = 23–29/11; tre mesi prima = 23/08–22/11.

@@ -12166,7 +12166,9 @@ function _tpTrimestre(oggi){
 // Riceve le richieste di UNA persona. Pura.
 function _tpBlocchi(lista){
   const giorno=r=>{const m=String(_tpFmtDate(r.giornoRichiesto)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?Math.round(Date.UTC(+m[3],+m[2]-1,+m[1])/864e5):null;};
-  const tipo=r=>String(r.preferenza||'').trim().replace(/\s+/g,' ').toUpperCase();
+  // Riposi e ferie attaccati sono un'unica assenza (QM, 28/11/2026: 8/10 riposo, 9/10 ferie, 10/10
+  // riposo = una richiesta). Le richieste di turno (apertura, chiusura…) restano per tipo.
+  const tipo=r=>{const u=String(r.preferenza||'').trim().replace(/\s+/g,' ').toUpperCase();return /FERIE|RIPOSO/.test(u)?'LIBERO':u;};
   const ord=(lista||[]).map(r=>({r,g:giorno(r),t:tipo(r)})).filter(x=>x.g!==null).sort((a,b)=>a.t.localeCompare(b.t)||a.g-b.g);
   const out=[];
   ord.forEach(x=>{
@@ -12174,7 +12176,9 @@ function _tpBlocchi(lista){
     if(u&&u.t===x.t&&x.g-u.ga<=1){if(x.g>u.ga){u.ga=x.g;u.a=x.r;}u.righe.push(x.r);return;}
     out.push({t:x.t,gd:x.g,ga:x.g,da:x.r,a:x.r,righe:[x.r]});
   });
-  return out.map(b=>({da:b.da,a:b.a,giorni:b.ga-b.gd+1,preferenza:b.da.preferenza,
+  // Nel blocco misto si leggono tutte le preferenze, nell'ordine dei giorni: «RIPOSO + FERIE».
+  const nomi=b=>[...new Set(b.righe.slice().sort((x,y)=>giorno(x)-giorno(y)).map(r=>String(r.preferenza||'').trim().toUpperCase()).filter(Boolean))].join(' + ');
+  return out.map(b=>({da:b.da,a:b.a,giorni:b.ga-b.gd+1,preferenza:nomi(b)||b.da.preferenza,
     motivazione:(b.righe.find(r=>r.motivazione)||{}).motivazione||'',righe:b.righe}));
 }
 function _tpConsuntivo(dati,filtro,oggi){

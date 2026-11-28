@@ -648,3 +648,8 @@ richiesta («08/11 – 09/11/2026 · 2 giorni · RIPOSO»). Un blocco a cavallo 
 settimana prossima conta una volta per parte. Il numerino dei giorni nel calendario resta per
 giorno. Copia identica nella Galleria (`_gtBlocchi`, `_gtConsuntivo`, confrontate in
 `test/galleria.js`). Sabotaggio (niente raggruppamento) → 8 controlli falliscono.
+
+**Riposi e ferie attaccati** (28/11/2026, QM): sono un'unica assenza: 8/10 riposo, 9/10 ferie,
+10/10 riposo = **una** richiesta, che nell'elenco si legge «RIPOSO + FERIE». In `_tpBlocchi` ogni
+preferenza con FERIE o RIPOSO vale come «giorno libero»; le richieste di turno (apertura, chiusura…)
+restano per tipo, quindi chiusura e riposo di fila sono ancora due.
