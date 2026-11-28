@@ -1561,9 +1561,10 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .rc5-nb{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;padding-top:2px;}
 .rc5-camera{font-size:18px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:8px;padding:2px 10px;letter-spacing:-.01em;white-space:nowrap;line-height:1.4;}
 .rc5-nome{font-size:15px;font-weight:700;color:var(--text);line-height:1.3;overflow-wrap:break-word;}
-.rc5-st{font-size:11.5px;font-weight:700;color:var(--gold);}
-.rc5-st.sp{color:var(--red);}
-.rc5-st i{display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px;}
+/* Striscia in cima solo sulle schede nuove (oro) o spostate (rosso), QM 28/11/2026 scelta 4. */
+.rc5-card{overflow:hidden;}
+.rc5-band{margin:-14px -16px 12px;padding:5px 16px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);background:var(--gold-bg);border-bottom:1px solid var(--border-light);}
+.rc5-band.sp{color:var(--red);background:var(--red-bg);}
 .rc5-r1{font-size:13px;color:var(--text);margin-top:10px;}
 .rc5-r2{font-size:12px;color:var(--text-muted);margin-top:3px;display:flex;align-items:center;gap:4px;}
 .rc5-f{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px;border-top:1px solid var(--border-light);}

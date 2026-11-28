@@ -347,9 +347,11 @@ Proposta mostrata prima; le card col testa navy erano «troppo pesanti», scelte
   schede compatte su una riga con la camera in pastiglia navy («troppe pastiglie blu scuro», «troppo
   compatte»). **Ora**: scheda ariosa, tre per riga; camera grande in etichetta chiara (`.rc5-camera`,
   azzurrino con scritta blu); «Nuova» in oro o «Spostata · era …» in rosso come parola piccola in alto a
-  destra (`.rc5-st`); soggiorno «28/11 → 01/12 · 3 notti · 2 ospiti · BB» (trattamento in sigla) e
-  canale sotto; Seleziona e Stampa in fondo. Nome e stato uno sotto l'altro (`.rc5-nb`): accanto, il nome
-  andava a capo lettera per lettera. **La spunta è nel blu di Compass** (`accent-color`), non il
+  destra (`.rc5-st`) — **poi spostato** (QM: «devono essere in altra posizione», scelta 4 fra quattro: bordo,
+  fondo, sotto la camera, striscia): una **striscia sottile in cima** solo sulle schede nuove (oro, «Nuova
+  prenotazione») o spostate (rosso, «Camera spostata · era …»), `.rc5-band(.sp)`; soggiorno «28/11 → 01/12 · 3 notti · 2 ospiti · BB» (trattamento in sigla) e
+  canale sotto; Seleziona e Stampa in fondo. Il nome sta da solo accanto alla camera (`.rc5-nb`): con lo stato accanto andava a
+  capo lettera per lettera. **La spunta è nel blu di Compass** (`accent-color`), non il
   blu elettrico del browser (QM). Stessi id (`rc-card-<i>`), `rcToggleSelect`, `preparePrint`, `rcOpenModal`.
 - `rcRenderSourceLine` ora scrive una frase nella fascia verde (`#rcSourceLine`).
 

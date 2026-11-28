@@ -10218,12 +10218,14 @@ function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(
   const arrivoMatch=arriviData&&arriviData.arrivi&&arriviData.arrivi.find(a=>normCam(a.camera)===normCam(g.camera));
   const origine=String(g.origine||(arrivoMatch&&arrivoMatch.origine)||'').trim();
   const isBooking=/booking/i.test(origine);
-  const stato=g.isNew?'<span class="rc5-st"><i></i>Nuova</span>'
-    :g.roomChanged?`<span class="rc5-st sp"><i></i>Spostata${g.prevCamera?' · era '+_esc(g.prevCamera):''}</span>`:'';
+  // Striscia sottile in cima, solo sulle schede nuove o spostate (QM, 28/11/2026, scelta 4 fra quattro
+  // posizioni: accanto e sotto il nome non andava bene).
+  const stato=g.isNew?'<div class="rc5-band">Nuova prenotazione</div>'
+    :g.roomChanged?`<div class="rc5-band sp">Camera spostata${g.prevCamera?' · era '+_esc(g.prevCamera):''}</div>`:'';
   const card=document.createElement('div');card.className='rc5-card'+(_rcSelected.has(idx)?' rc-card-selected':'');card.id='rc-card-'+idx;
   const trat=String(g.trattamento||'').trim().toUpperCase();
   const meta=[String(g.checkin||'—').slice(0,5)+' → '+String(g.checkout||'—').slice(0,5),nights+(nights===1?' notte':' notti'),g.pax+' '+(g.pax===1?'ospite':'ospiti'),trat].filter(Boolean).map(_esc).join(' · ');
-  card.innerHTML=`<div class="rc5-h"><span class="rc5-camera">${_esc(g.camera)}</span><div class="rc5-nb"><span class="rc5-nome">${_esc(g.nome)}</span>${stato}</div></div><div class="rc5-r1">${meta}</div>${origine?`<div class="rc5-r2">${isBooking?BK_ICON:''}${_esc(origine)}</div>`:''}<div class="rc5-f"><label onclick="event.stopPropagation()"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)"${_rcSelected.has(idx)?' checked':''}> Seleziona</label><button class="rc5-stampa" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
+  card.innerHTML=`${stato}<div class="rc5-h"><span class="rc5-camera">${_esc(g.camera)}</span><div class="rc5-nb"><span class="rc5-nome">${_esc(g.nome)}</span></div></div><div class="rc5-r1">${meta}</div>${origine?`<div class="rc5-r2">${isBooking?BK_ICON:''}${_esc(origine)}</div>`:''}<div class="rc5-f"><label onclick="event.stopPropagation()"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)"${_rcSelected.has(idx)?' checked':''}> Seleziona</label><button class="rc5-stampa" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}
