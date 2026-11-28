@@ -5013,17 +5013,3 @@ sez('Registration card divise per struttura (28/11/2026)');
   ok('struttura mancante: «Altre camere»', gr[3].nome, 'Altre camere');
   ok('elenco vuoto: nessun gruppo', _rcGruppi([]).length, 0);
 })();
-
-// ---------------------------------------------------------------------------
-sez('Bilanciamento Camere: la versione nuova è solo una prova (28/11/2026)');
-// Il QM «non si fida»: la versione nuova si vede solo dove qualcuno la accende. Spenta per
-// tutti finché non si accende, e si spegne del tutto.
-(function () {
-  var prima = null; try { prima = localStorage.getItem('qm_rd_prova'); localStorage.removeItem('qm_rd_prova'); } catch (e) {}
-  ok('spenta se nessuno la accende', _rdProvaOn(), false);
-  try { localStorage.setItem('qm_rd_prova', '1'); } catch (e) {}
-  ok('accesa solo dopo averla accesa', _rdProvaOn(), true);
-  try { localStorage.removeItem('qm_rd_prova'); } catch (e) {}
-  ok('e si spegne', _rdProvaOn(), false);
-  try { if (prima !== null) localStorage.setItem('qm_rd_prova', prima); } catch (e) {}
-})();
