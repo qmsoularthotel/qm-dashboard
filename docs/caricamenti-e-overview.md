@@ -373,6 +373,6 @@ convince» — le cose che disturbavano erano «Lib», i colori e Oggi confuso c
   tutt'intorno (`.pw-day.on`). Prima erano lo stesso filo oro in alto e si confondevano.
 - **Titoli delle strisce** in grigio (`--text-muted`), non più oro: l'oro resta solo per Oggi, il
   giorno scelto e San Liborio.
-- Colori dei cerchi: per ora quelli di prima (arancio le partenze, azzurro col bordo blu le fermate).
-  Sono state mostrate al QM due alternative (tutto nel blu Compass; cerchi grigi neutri): da
-  decidere.
+- **Colori dei cerchi tutti nel blu Compass** (QM, scelta «2» fra tre proposte): partenze col fondo
+  azzurrino (`--accent-bg`) e bordo blu, fermate solo col bordo blu su fondo chiaro. Scartati: arancio
+  le partenze/azzurro le fermate (quelli di prima) e cerchi grigi neutri.
