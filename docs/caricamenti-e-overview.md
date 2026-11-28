@@ -343,5 +343,5 @@ accanto ai cerchi, che restano nel suggerimento al passaggio del mouse). Esempio
 Boutique. Il giorno scelto si accende in tutte e due; la situazione del giorno sotto non cambia.
 
 **San Liborio indicato** (28/11/2026, QM): nella striscia SoulArt + San Liborio, accanto a fermate e
-partenze, la pastiglia oro «SL n» (`_sl`, `.pw-sl`) dice quante sono di San Liborio; se zero resta lo
+partenze, la scritta oro «Lib n», senza pastiglia (`_sl`, `.pw-sl`; prima era «SL» in pastiglia, scartata dal QM) dice quante sono di San Liborio; se zero resta lo
 spazio vuoto (`.pw-sl.vuoto`, invisibile) perché su smartphone i giorni restino allineati.

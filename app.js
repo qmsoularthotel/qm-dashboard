@@ -3606,9 +3606,9 @@ function pianoRenderWeek(activeIdx){
   const _n=a=>(a&&a.length)||0;
   const _conta=(hs,g)=>hs.reduce((t,h)=>{const x=g[h]||{};t.f+=_n(x.fermate);t.p+=_n(x.partenze)+_n(x.cambi);return t;},{f:0,p:0});
   // San Liborio dentro la striscia del SoulArt (QM, 28/11/2026): quante fermate e partenze sono sue,
-  // solo quando ce ne sono: pastiglia oro «SL 2» accanto al numero. Senza, resta lo spazio vuoto
+  // solo quando ce ne sono: scritta oro «Lib 2» accanto al numero, senza pastiglia. Senza, resta lo spazio vuoto
   // (.vuoto), così su smartphone i giorni della striscia restano allineati.
-  const _sl=(n,t)=>n?`<span class="pw-sl" title="${n} ${t} a San Liborio">SL ${n}</span>`:'<span class="pw-sl vuoto" aria-hidden="true">SL 0</span>';
+  const _sl=(n,t)=>n?`<span class="pw-sl" title="${n} ${t} a San Liborio">Lib ${n}</span>`:'<span class="pw-sl vuoto" aria-hidden="true">Lib 0</span>';
   const _striscia=(titolo,hs,conSL)=>`<div class="pw-sez"><div class="pw-sez-t">${titolo}</div><div class="pw-riga">${pianoData.giorni.map((g,i)=>{
     const c=_conta(hs,g);
     const sl=conSL?_conta(['liborio'],g):{f:0,p:0};
