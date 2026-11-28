@@ -1567,3 +1567,12 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .rc5-stampa:hover{border-color:var(--accent);}
 @media (max-width:1100px){.rc5-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media (max-width:640px){.rc5-grid{grid-template-columns:1fr;}.rc5-foglio{max-width:170px;}}
+/* «Da stampare per prime» compatto: le camere in pastiglie (QM, 28/11/2026: l'elenco era troppo lungo). */
+.rc5-gruppo{margin-top:4px;padding:10px 0;border-bottom:1px solid var(--border-light);}
+.rc5-gruppo:last-of-type{border-bottom:none;}
+.rc5-gt{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.rc5-gt b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:11px;margin-left:4px;}
+.rc5-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.rc5-chip{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 11px;cursor:pointer;}
+.rc5-chip:hover{border-color:var(--accent);}
+.rc5-chip span{font-weight:400;color:var(--text-muted);margin-left:3px;}

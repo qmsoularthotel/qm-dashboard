@@ -10013,8 +10013,15 @@ function rcRenderTesta(manca){
     if(blocca){
       nov.innerHTML=`<div class="inv5-centro" style="height:100%;min-height:230px">${cerchio('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>')}<div class="inv5-gt">Si sbloccano coi caricamenti di oggi</div><div class="inv5-gs">Le card si vedono e si stampano dopo il primo caricamento di oggi di Prenotazioni e Piano Settimanale nell'Upload Center. Manca${manca.length>1?'no':''}: <b>${manca.map(_esc).join('</b> e <b>')}</b>.</div></div>`;
     }else if(hi.length){
-      nov.innerHTML=`<div class="inv5-gl">Nuove o cambiate dall'ultimo caricamento</div>${hi.map(o=>{const x=_rcPulito(o.x);const n=rcCalcNights(x.checkin,x.checkout);
-        return`<div class="inv5-voce rc5-voce" onclick="rcOpenModal(${o.i})"><span class="rc5-cam">${_esc(x.camera)}</span><div><div class="inv5-vt">${_esc(x.nome)} <span class="inv5-vq">· ${x.isNew?'nuova prenotazione':'camera spostata'}</span></div><div class="inv5-vs">${x.roomChanged?'era in '+_esc(x.prevCamera||'un\'altra camera')+': la card stampata prima ha la camera sbagliata':_esc(String(x.checkin||'').slice(0,5)+' → '+String(x.checkout||'').slice(0,5)+' · '+n+' notti · '+x.pax+' '+(x.pax===1?'ospite':'ospiti'))}</div>${x.roomChanged?'<div class="inv5-urg">Da ristampare</div>':''}</div></div>`;}).join('')}<div class="inv5-gs inv5-dopo">Sono già selezionate: «Stampa selezionate» stampa solo queste. Tocca un nome per l'anteprima.</div>`;
+      // Compatto (QM, 28/11/2026: l'elenco nome per nome era «troppo lungo»): solo le camere in
+      // pastiglie, in due gruppi. Tocca una camera → l'anteprima. Il dettaglio sta nelle schede sotto.
+      const nuove=hi.filter(o=>o.x.isNew),sposta=hi.filter(o=>!o.x.isNew&&o.x.roomChanged);
+      const chip=(o,txt)=>`<button class="rc5-chip" onclick="rcOpenModal(${o.i})" title="${_esc(o.x.nome||'')}">${txt}</button>`;
+      const gruppo=(tit,arr,f)=>arr.length?`<div class="rc5-gruppo"><div class="rc5-gt">${tit} <b>${arr.length}</b></div><div class="rc5-chips">${arr.map(f).join('')}</div></div>`:'';
+      nov.innerHTML=`<div class="inv5-gl">Da stampare per prime</div>
+        ${gruppo('Nuove prenotazioni',nuove,o=>chip(o,_esc(o.x.camera)))}
+        ${gruppo('Camere spostate · da ristampare',sposta,o=>chip(o,_esc(o.x.camera)+(o.x.prevCamera?' <span>era '+_esc(o.x.prevCamera)+'</span>':'')))}
+        <div class="inv5-gs inv5-dopo">Sono già selezionate: «Stampa selezionate» stampa solo queste. Tocca una camera per l'anteprima.</div>`;
     }else{
       nov.innerHTML=`<div class="inv5-gl">Nuove o cambiate dall'ultimo caricamento</div><div class="inv5-centro" style="min-height:200px">${cerchio('<path d="M5 12l5 5L19 7"/>')}<div class="inv5-gt">Nessuna novità</div><div class="inv5-gs">${g.length?'Le card sono quelle del caricamento precedente: si stampano tutte con «Stampa tutte».':'Oggi non ci sono arrivi nel file Prenotazioni.'}</div></div>`;
     }

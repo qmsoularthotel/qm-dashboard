@@ -315,8 +315,10 @@ nasconde/mostra già per id. Controllo in `test/esegui.sh`.
 Proposta mostrata prima; le card col testa navy erano «troppo pesanti», scelte le **schede leggere**.
 - `#rcResults` è una `.inv5-cornice.rc5`. `rcRenderTesta(manca)` (chiamata da `rcApplicaScadenza`, quindi
   a ogni ridisegno e a ogni caricamento) scrive riga oro (`#rcK`: giorno, ora del file Prenotazioni,
-  arrivi), titolo-verdetto (`#rcT`), il riquadro grande `#rcNovita` (le card nuove o spostate, già
-  selezionate, tocca → `rcOpenModal`; senza novità: «Nessuna novità»; bloccata: lucchetto e cosa manca)
+  arrivi), titolo-verdetto (`#rcT`), il riquadro grande `#rcNovita` («Da stampare per prime»: solo le
+  camere in pastiglie `.rc5-chip`, in due gruppi, Nuove prenotazioni e Camere spostate «era …» — l'elenco
+  nome per nome era troppo lungo, QM 28/11/2026; già selezionate, tocca → `rcOpenModal`; senza novità:
+  «Nessuna novità»; bloccata: lucchetto e cosa manca)
   e i tre riquadri `#rcPassi`. A destra il foglio A4 disegnato, copiato dalla Galleria (`.rc5-foglio`).
 - **Bloccata** finché mancano i caricamenti di oggi: come prima `#rcPanel` sparisce; il vecchio
   riquadro `#rcScadute` non si usa più (il messaggio è nel riquadro grande), resta nascosto.
