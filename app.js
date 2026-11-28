@@ -3620,8 +3620,8 @@ function pianoRenderWeek(activeIdx){
     return`<div onclick="pianoNavRender(${i})" class="pw-day${i===activeIdx?' on':''}" title="${_esc(g.label||'')}">
       <div class="pw-k">${oggi?'Oggi':''}</div>
       <div class="pw-g">${dayName}<span class="pw-d">${dayDate}</span></div>
-      <div class="pw-r">${_cerchio(c.p,'part','partenze e cambi')}<span class="pw-l">partenze</span>${conSL?_sl(sl.p,'partenze e cambi'):''}</div>
-      <div class="pw-r">${_cerchio(c.f,'','fermate')}<span class="pw-l">fermate</span>${conSL?_sl(sl.f,'fermate'):''}</div>
+      <div class="pw-r">${_cerchio(c.p,'part','partenze e cambi')}<span class="pw-lt"><span class="pw-l">partenze</span>${conSL?_sl(sl.p,'partenze e cambi'):''}</span></div>
+      <div class="pw-r">${_cerchio(c.f,'','fermate')}<span class="pw-lt"><span class="pw-l">fermate</span>${conSL?_sl(sl.f,'fermate'):''}</span></div>
       <div class="pw-t"><span class="pw-tl">Tot</span><span class="pw-tv">${c.f+c.p}</span></div>
     </div>`;}).join('')}</div></div>`;
   row.innerHTML=_striscia('SoulArt Hotel · Art Suite San Liborio',['soulart','liborio'],true)+_striscia('Boutique Hotel',['boutique']);

@@ -1391,27 +1391,30 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .pw-sez+.pw-sez{margin-top:10px;}
 .pw-sez-t{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin:0 2px 6px;}
 .pw-riga{display:flex;gap:4px;}
-.pw-day{flex:1;min-width:0;background:var(--bg);border:1px solid var(--border-light);border-top:4px solid transparent;border-radius:12px;padding:6px 10px 8px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:box-shadow .15s,border-color .15s,background .15s;}
+.pw-day{flex:1;min-width:0;background:var(--bg);border:1px solid var(--border-light);border-top:4px solid transparent;border-radius:12px;padding:6px 8px 8px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:box-shadow .15s,border-color .15s,background .15s;}
 .pw-day:hover{border-color:var(--border);}
 .pw-day.on{background:var(--surface);border-top-color:var(--gold);box-shadow:0 1px 4px rgba(0,0,0,.06);}
 .pw-k{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;min-height:14px;line-height:14px;}
 .pw-g{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;white-space:nowrap;}
 .pw-d{font-size:12px;font-weight:400;color:var(--text-muted);margin-left:5px;}
-.pw-r{display:flex;align-items:center;gap:8px;}
+.pw-r{display:flex;align-items:center;gap:6px;min-height:30px;}
+/* Scritta e «Lib» uno sotto l'altra: così le scritte stanno anche nelle schede strette (QM, 28/11/2026). */
+.pw-lt{display:flex;flex-direction:column;min-width:0;line-height:1.15;}
 .pw-n{min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--accent-bg);border:1.5px solid var(--gold);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;}
 .pw-n.part{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);}
 .pw-n.zero{background:none;border-color:var(--border-light);color:var(--text-dim);}
-.pw-l{font-size:12px;color:var(--text-muted);}
-.pw-sl{margin-left:auto;font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap;line-height:14px;}
-.pw-sl.vuoto{visibility:hidden;}
+.pw-l{font-size:12px;color:var(--text-muted);white-space:nowrap;}
+.pw-sl{font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap;line-height:14px;}
+.pw-sl.vuoto{visibility:hidden;display:none;}
 .pw-t{display:flex;justify-content:space-between;align-items:baseline;gap:4px;border-top:1px solid var(--border-light);padding-top:6px;margin-top:1px;}
 .pw-tl{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;}
 .pw-tv{font-size:16px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
 /* Scheda stretta: decide la larghezza della SCHEDA, non della finestra (28/11/2026: sullo schermo del
-   QM l'Overview è più stretta della finestra e «Lib» usciva dal bordo). Le scritte fermate/partenze
-   lasciano il posto, «Lib» resta accanto al cerchio. */
+   QM l'Overview è più stretta della finestra e «Lib» usciva dal bordo). Solo nelle schede molto strette
+   (smartphone) le scritte partenze/fermate lasciano il posto e «Lib» resta accanto al cerchio. */
 .pw-day{container-type:inline-size;}
-@container (max-width:130px){.pw-l{display:none;}.pw-r{justify-content:center;gap:4px;}.pw-sl{margin-left:0;}}
+@container (max-width:84px){.pw-n{min-width:24px;height:24px;padding:0 4px;font-size:12px;}.pw-r{gap:4px;}.pw-l{font-size:11px;}}
+@container (max-width:66px){.pw-l{display:none;}.pw-r{justify-content:center;}.pw-sl.vuoto{display:inline;}}
 @media (max-width:768px){
   .pw-riga{gap:3px;}
   .pw-r{flex-direction:column;gap:2px;}

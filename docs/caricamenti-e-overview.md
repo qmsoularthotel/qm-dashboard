@@ -351,3 +351,9 @@ un contenitore (`container-type:inline-size`) e sotto 130px di contenuto (`@cont
 fermate/partenze lasciano il posto e «Lib» resta accanto al cerchio.
 
 **Ordine delle righe** (28/11/2026, QM): sopra le partenze (con i cambi), sotto le fermate.
+
+**Scritte sempre, tranne su smartphone** (28/11/2026, QM): «Lib» sta sotto la parola (`.pw-lt`, in
+colonna), non accanto, così «partenze»/«fermate» entrano anche nelle schede di circa 90px. Sotto 84px
+di contenuto cerchio e scritta si rimpiccioliscono; solo sotto 66px (smartphone) le scritte spariscono
+e «Lib» resta vicino al cerchio. Senza San Liborio lo spazio vuoto di «Lib» si toglie quando ci sono le
+scritte (altrimenti la parola stava più in alto del cerchio) e resta solo senza scritte, per allineare.
